@@ -249,6 +249,17 @@ export function buildPdfViewerHtml(): string {
 
     document.body.addEventListener('click', () => post('tap', {}));
 
+    let lastTap = 0;
+    document.body.addEventListener('touchend', () => {
+      const now = Date.now();
+      if (now - lastTap < 280) {
+        scale = scale > 1.4 ? 1 : scale * 1.6;
+        renderAll();
+        post('scale', { scale });
+      }
+      lastTap = now;
+    }, { passive: true });
+
     post('ready', {});
   </script>
 </body>

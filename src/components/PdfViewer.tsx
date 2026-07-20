@@ -151,6 +151,16 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
     [onLoad, onPageChange, onSearchResult, onTap],
   );
 
+  useEffect(() => {
+    if (!ready) return;
+    send({ type: 'setFit', fitMode });
+  }, [fitMode, ready, send]);
+
+  useEffect(() => {
+    if (!ready) return;
+    send({ type: 'setScrollMode', scrollMode });
+  }, [scrollMode, ready, send]);
+
   // When WebView becomes ready, push any buffered base64 load
   useEffect(() => {
     if (!ready) return;
