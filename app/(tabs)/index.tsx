@@ -1,38 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { LibraryView } from '@/src/components/LibraryView';
 
 export default function LibraryScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.brand}>Aado</Text>
-      <Text style={styles.title}>Your library</Text>
-      <Text style={styles.subtitle}>Open a PDF to start reading.</Text>
-    </View>
-  );
+  return <LibraryView />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F1419',
-    paddingHorizontal: 24,
-    paddingTop: 32,
-  },
-  brand: {
-    fontSize: 42,
-    fontWeight: '700',
-    color: '#C4A574',
-    letterSpacing: -1,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#F4F1EA',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    lineHeight: 24,
-  },
-});
