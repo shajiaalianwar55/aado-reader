@@ -8,6 +8,7 @@ import { ReaderControls } from '@/src/components/ReaderControls';
 import { ThemeControls } from '@/src/components/ThemeControls';
 import { getDocument, loadSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
+import { useReadingSession } from '@/src/hooks/useReadingSession';
 import type { FitMode, LibraryDocument, ReadingThemeId, ScrollMode } from '@/src/types';
 
 export default function ReaderScreen() {
@@ -24,10 +25,13 @@ export default function ReaderScreen() {
   const [chromeVisible, setChromeVisible] = useState(true);
   const [themeId, setThemeId] = useState<ReadingThemeId>('night');
   const [brightness, setBrightness] = useState(1);
+  const [keepAwake, setKeepAwake] = useState(true);
 
   const theme = readingThemes[themeId];
   const title = useMemo(() => params.name ?? doc?.name ?? 'Document', [params.name, doc?.name]);
   const uri = params.uri ?? doc?.uri;
+
+  useReadingSession(Boolean(uri) && keepAwake);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +42,7 @@ export default function ReaderScreen() {
         setBrightness(settings.brightness);
         setFitMode(settings.fitMode);
         setScrollMode(settings.scrollMode);
+        setKeepAwake(settings.keepAwake);
       }
       const existing = await getDocument(params.id);
       if (cancelled) return;
@@ -165,11 +170,12 @@ export default function ReaderScreen() {
           style={[
             styles.tint,
             {
-              backgroundColor: theme.pdfTint,
-              opacity: 1.1 - brightness,
+              backgroundColor: '#000',
+              opacity: Math.max(0, 1 - brightness) * 0.55,
             },
           ]}
         />
+        <View pointerEvents="none" style={[styles.tint, { backgroundColor: theme.pdfTint }]} />
       </View>
       {error ? (
         <View style={styles.errorBanner}>
