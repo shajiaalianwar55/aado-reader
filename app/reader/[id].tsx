@@ -3,8 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
+import { ReaderControls } from '@/src/components/ReaderControls';
 import { getDocument, updateDocument, upsertDocument } from '@/src/store/libraryStore';
-import type { LibraryDocument } from '@/src/types';
+import type { FitMode, LibraryDocument, ScrollMode } from '@/src/types';
 
 export default function ReaderScreen() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function ReaderScreen() {
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [scrollMode, setScrollMode] = useState<ScrollMode>('vertical');
+  const [fitMode, setFitMode] = useState<FitMode>('width');
 
   const title = useMemo(() => params.name ?? doc?.name ?? 'Document', [params.name, doc?.name]);
   const uri = params.uri ?? doc?.uri;
@@ -63,6 +66,32 @@ export default function ReaderScreen() {
     setPage(next);
   }, []);
 
+  const goPage = useCallback(
+    (next: number) => {
+      if (pageCount <= 0) return;
+      const clamped = Math.min(Math.max(next, 1), pageCount);
+      setPage(clamped);
+      viewerRef.current?.setPage(clamped);
+    },
+    [pageCount],
+  );
+
+  const toggleScrollMode = useCallback(() => {
+    setScrollMode((mode) => {
+      const next = mode === 'vertical' ? 'paged' : 'vertical';
+      viewerRef.current?.setScrollMode(next);
+      return next;
+    });
+  }, []);
+
+  const toggleFitMode = useCallback(() => {
+    setFitMode((mode) => {
+      const next = mode === 'width' ? 'page' : 'width';
+      viewerRef.current?.setFitMode(next);
+      return next;
+    });
+  }, []);
+
   if (!uri) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -96,9 +125,23 @@ export default function ReaderScreen() {
         ref={viewerRef}
         uri={uri}
         initialPage={page}
+        fitMode={fitMode}
+        scrollMode={scrollMode}
         onLoad={onLoad}
         onPageChange={onPageChange}
         onError={setError}
+      />
+      <ReaderControls
+        page={page}
+        pageCount={pageCount}
+        scrollMode={scrollMode}
+        fitMode={fitMode}
+        onPrev={() => goPage(page - 1)}
+        onNext={() => goPage(page + 1)}
+        onToggleScrollMode={toggleScrollMode}
+        onToggleFitMode={toggleFitMode}
+        onZoomIn={() => viewerRef.current?.zoomIn()}
+        onZoomOut={() => viewerRef.current?.zoomOut()}
       />
       {error ? (
         <View style={styles.errorBanner}>
