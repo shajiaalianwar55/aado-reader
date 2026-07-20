@@ -3,9 +3,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
+import { ReaderChrome } from '@/src/components/ReaderChrome';
 import { ReaderControls } from '@/src/components/ReaderControls';
-import { getDocument, updateDocument, upsertDocument } from '@/src/store/libraryStore';
-import type { FitMode, LibraryDocument, ScrollMode } from '@/src/types';
+import { ThemeControls } from '@/src/components/ThemeControls';
+import { getDocument, loadSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
+import { readingThemes } from '@/src/theme/readingThemes';
+import type { FitMode, LibraryDocument, ReadingThemeId, ScrollMode } from '@/src/types';
 
 export default function ReaderScreen() {
   const router = useRouter();
@@ -18,13 +21,24 @@ export default function ReaderScreen() {
   const [error, setError] = useState<string | null>(null);
   const [scrollMode, setScrollMode] = useState<ScrollMode>('vertical');
   const [fitMode, setFitMode] = useState<FitMode>('width');
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const [themeId, setThemeId] = useState<ReadingThemeId>('night');
+  const [brightness, setBrightness] = useState(1);
 
+  const theme = readingThemes[themeId];
   const title = useMemo(() => params.name ?? doc?.name ?? 'Document', [params.name, doc?.name]);
   const uri = params.uri ?? doc?.uri;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const settings = await loadSettings();
+      if (!cancelled) {
+        setThemeId(settings.theme);
+        setBrightness(settings.brightness);
+        setFitMode(settings.fitMode);
+        setScrollMode(settings.scrollMode);
+      }
       const existing = await getDocument(params.id);
       if (cancelled) return;
       if (existing) {
@@ -94,107 +108,100 @@ export default function ReaderScreen() {
 
   if (!uri) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.error}>Missing PDF file.</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+        <Text style={[styles.error, { color: theme.text }]}>Missing PDF file.</Text>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>Back</Text>
+          <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
         </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={() => router.back()}
-          style={styles.backBtn}>
-          <Text style={styles.backText}>Back</Text>
-        </Pressable>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={styles.pageLabel}>
-          {page}
-          {pageCount ? ` / ${pageCount}` : ''}
-        </Text>
+    <ReaderChrome
+      visible={chromeVisible}
+      theme={theme}
+      title={title}
+      onBack={() => router.back()}
+      topInset={insets.top}
+      bottomInset={insets.bottom}
+      bottom={
+        <>
+          <ReaderControls
+            page={page}
+            pageCount={pageCount}
+            scrollMode={scrollMode}
+            fitMode={fitMode}
+            onPrev={() => goPage(page - 1)}
+            onNext={() => goPage(page + 1)}
+            onToggleScrollMode={toggleScrollMode}
+            onToggleFitMode={toggleFitMode}
+            onZoomIn={() => viewerRef.current?.zoomIn()}
+            onZoomOut={() => viewerRef.current?.zoomOut()}
+          />
+          <ThemeControls
+            theme={theme}
+            activeTheme={themeId}
+            brightness={brightness}
+            onThemeChange={setThemeId}
+            onBrightnessChange={setBrightness}
+          />
+        </>
+      }>
+      <View style={styles.viewerWrap}>
+        <PdfViewer
+          ref={viewerRef}
+          uri={uri}
+          initialPage={page}
+          fitMode={fitMode}
+          scrollMode={scrollMode}
+          onLoad={onLoad}
+          onPageChange={onPageChange}
+          onTap={() => setChromeVisible((v) => !v)}
+          onError={setError}
+        />
+        <View
+          pointerEvents="none"
+          style={[
+            styles.tint,
+            {
+              backgroundColor: theme.pdfTint,
+              opacity: 1.1 - brightness,
+            },
+          ]}
+        />
       </View>
-      <PdfViewer
-        ref={viewerRef}
-        uri={uri}
-        initialPage={page}
-        fitMode={fitMode}
-        scrollMode={scrollMode}
-        onLoad={onLoad}
-        onPageChange={onPageChange}
-        onError={setError}
-      />
-      <ReaderControls
-        page={page}
-        pageCount={pageCount}
-        scrollMode={scrollMode}
-        fitMode={fitMode}
-        onPrev={() => goPage(page - 1)}
-        onNext={() => goPage(page + 1)}
-        onToggleScrollMode={toggleScrollMode}
-        onToggleFitMode={toggleFitMode}
-        onZoomIn={() => viewerRef.current?.zoomIn()}
-        onZoomOut={() => viewerRef.current?.zoomOut()}
-      />
       {error ? (
         <View style={styles.errorBanner}>
           <Text style={styles.error}>{error}</Text>
         </View>
       ) : null}
-    </View>
+    </ReaderChrome>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F1419',
-  },
+  container: { flex: 1 },
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E2630',
+  viewerWrap: { flex: 1 },
+  tint: {
+    ...StyleSheet.absoluteFillObject,
   },
   backBtn: {
     paddingVertical: 6,
     paddingHorizontal: 4,
   },
   backText: {
-    color: '#C4A574',
     fontWeight: '600',
     fontSize: 16,
   },
-  title: {
-    flex: 1,
-    color: '#F4F1EA',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  pageLabel: {
-    color: '#9CA3AF',
-    fontSize: 13,
-    minWidth: 56,
-    textAlign: 'right',
-  },
   error: {
-    color: '#F4F1EA',
     textAlign: 'center',
+    color: '#F4F1EA',
   },
   errorBanner: {
     position: 'absolute',
