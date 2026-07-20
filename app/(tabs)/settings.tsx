@@ -1,11 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function LibraryScreen() {
+export default function SettingsScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.brand}>Aado</Text>
-      <Text style={styles.title}>Your library</Text>
-      <Text style={styles.subtitle}>Open a PDF to start reading.</Text>
+      <Text style={styles.title}>Reading defaults</Text>
+      <Text style={styles.subtitle}>Preferences for new documents will appear here.</Text>
     </View>
   );
 }
@@ -16,13 +15,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F1419',
     paddingHorizontal: 24,
     paddingTop: 32,
-  },
-  brand: {
-    fontSize: 42,
-    fontWeight: '700',
-    color: '#C4A574',
-    letterSpacing: -1,
-    marginBottom: 8,
   },
   title: {
     fontSize: 22,
