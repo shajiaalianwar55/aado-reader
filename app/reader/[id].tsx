@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
 import { PageScrubber } from '@/src/components/PageScrubber';
@@ -12,7 +13,7 @@ import { SearchBar } from '@/src/components/SearchBar';
 import { ThemeControls } from '@/src/components/ThemeControls';
 import { useReadingProgress } from '@/src/hooks/useReadingProgress';
 import { useReadingSession } from '@/src/hooks/useReadingSession';
-import { getDocument, loadSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
+import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
 import type { FitMode, LibraryDocument, ReadingThemeId, ScrollMode } from '@/src/types';
 
@@ -143,6 +144,18 @@ export default function ReaderScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
   }, [bookmarks, page, params.id]);
 
+  const onThemeChange = useCallback((next: ReadingThemeId) => {
+    setThemeId(next);
+    loadSettings().then((current) => saveSettings({ ...current, theme: next })).catch(() => undefined);
+  }, []);
+
+  const onBrightnessChange = useCallback((next: number) => {
+    setBrightness(next);
+    loadSettings()
+      .then((current) => saveSettings({ ...current, brightness: next }))
+      .catch(() => undefined);
+  }, []);
+
   if (!uri || !restored) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
@@ -159,7 +172,9 @@ export default function ReaderScreen() {
   }
 
   return (
-    <ReaderChrome
+    <>
+      <StatusBar style={themeId === 'night' ? 'light' : 'dark'} />
+      <ReaderChrome
       visible={chromeVisible}
       theme={theme}
       title={title}
@@ -200,8 +215,8 @@ export default function ReaderScreen() {
             theme={theme}
             activeTheme={themeId}
             brightness={brightness}
-            onThemeChange={setThemeId}
-            onBrightnessChange={setBrightness}
+            onThemeChange={onThemeChange}
+            onBrightnessChange={onBrightnessChange}
           />
         </>
       }>
@@ -239,6 +254,7 @@ export default function ReaderScreen() {
         </View>
       ) : null}
     </ReaderChrome>
+    </>
   );
 }
 
