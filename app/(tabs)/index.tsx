@@ -1,12 +1,30 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
 import { pickPdfDocument } from '@/src/lib/pickPdf';
+import { loadLibrary, upsertDocument } from '@/src/store/libraryStore';
+import type { LibraryDocument } from '@/src/types';
 
 export default function LibraryScreen() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [documents, setDocuments] = useState<LibraryDocument[]>([]);
+
+  const refresh = useCallback(async () => {
+    const docs = await loadLibrary();
+    setDocuments(docs);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const openPicker = useCallback(async () => {
     if (busy) return;
@@ -14,16 +32,40 @@ export default function LibraryScreen() {
     try {
       const doc = await pickPdfDocument();
       if (!doc) return;
+      const existing = documents.find((d) => d.id === doc.id);
+      const merged = existing
+        ? { ...existing, uri: doc.uri, lastOpened: Date.now() }
+        : doc;
+      const next = await upsertDocument(merged);
+      setDocuments(next);
       router.push({
         pathname: '/reader/[id]',
-        params: { id: doc.id, uri: doc.uri, name: doc.name },
+        params: { id: merged.id, uri: merged.uri, name: merged.name },
       });
     } catch (error) {
       Alert.alert('Could not open PDF', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setBusy(false);
     }
-  }, [busy, router]);
+  }, [busy, documents, router]);
 
-  return <LibraryView onOpenDocument={openPicker} />;
+  const openDocument = useCallback(
+    (id: string) => {
+      const doc = documents.find((d) => d.id === id);
+      if (!doc) return;
+      router.push({
+        pathname: '/reader/[id]',
+        params: { id: doc.id, uri: doc.uri, name: doc.name },
+      });
+    },
+    [documents, router],
+  );
+
+  return (
+    <LibraryView
+      documents={documents}
+      onOpenDocument={openPicker}
+      onSelectDocument={openDocument}
+    />
+  );
 }
