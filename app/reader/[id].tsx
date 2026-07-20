@@ -2,13 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import { BookmarkBar } from '@/src/components/BookmarkBar';
+import { PageScrubber } from '@/src/components/PageScrubber';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
 import { ReaderChrome } from '@/src/components/ReaderChrome';
 import { ReaderControls } from '@/src/components/ReaderControls';
+import { SearchBar } from '@/src/components/SearchBar';
 import { ThemeControls } from '@/src/components/ThemeControls';
+import { useReadingProgress } from '@/src/hooks/useReadingProgress';
+import { useReadingSession } from '@/src/hooks/useReadingSession';
 import { getDocument, loadSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
-import { useReadingSession } from '@/src/hooks/useReadingSession';
 import type { FitMode, LibraryDocument, ReadingThemeId, ScrollMode } from '@/src/types';
 
 export default function ReaderScreen() {
@@ -26,12 +31,17 @@ export default function ReaderScreen() {
   const [themeId, setThemeId] = useState<ReadingThemeId>('night');
   const [brightness, setBrightness] = useState(1);
   const [keepAwake, setKeepAwake] = useState(true);
+  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [matchCount, setMatchCount] = useState(0);
+  const [matchIndex, setMatchIndex] = useState(-1);
+  const [restored, setRestored] = useState(false);
 
   const theme = readingThemes[themeId];
   const title = useMemo(() => params.name ?? doc?.name ?? 'Document', [params.name, doc?.name]);
   const uri = params.uri ?? doc?.uri;
 
   useReadingSession(Boolean(uri) && keepAwake);
+  useReadingProgress(params.id, page);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +60,8 @@ export default function ReaderScreen() {
         setDoc(existing);
         setPage(existing.lastPage || 1);
         setPageCount(existing.pageCount || 0);
+        setBookmarks(existing.bookmarks ?? []);
+        setRestored(true);
         return;
       }
       if (params.uri && params.name) {
@@ -63,7 +75,10 @@ export default function ReaderScreen() {
           bookmarks: [],
         };
         await upsertDocument(created);
-        if (!cancelled) setDoc(created);
+        if (!cancelled) {
+          setDoc(created);
+          setRestored(true);
+        }
       }
     })();
     return () => {
@@ -82,7 +97,12 @@ export default function ReaderScreen() {
   );
 
   const onPageChange = useCallback((next: number) => {
-    setPage(next);
+    setPage((prev) => {
+      if (prev !== next) {
+        Haptics.selectionAsync().catch(() => undefined);
+      }
+      return next;
+    });
   }, []);
 
   const goPage = useCallback(
@@ -91,6 +111,7 @@ export default function ReaderScreen() {
       const clamped = Math.min(Math.max(next, 1), pageCount);
       setPage(clamped);
       viewerRef.current?.setPage(clamped);
+      Haptics.selectionAsync().catch(() => undefined);
     },
     [pageCount],
   );
@@ -111,13 +132,28 @@ export default function ReaderScreen() {
     });
   }, []);
 
-  if (!uri) {
+  const toggleBookmark = useCallback(async () => {
+    const next = bookmarks.includes(page)
+      ? bookmarks.filter((b) => b !== page)
+      : [...bookmarks, page].sort((a, b) => a - b);
+    setBookmarks(next);
+    if (params.id) {
+      await updateDocument(params.id, { bookmarks: next });
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+  }, [bookmarks, page, params.id]);
+
+  if (!uri || !restored) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
-        <Text style={[styles.error, { color: theme.text }]}>Missing PDF file.</Text>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
-        </Pressable>
+        <Text style={[styles.error, { color: theme.text }]}>
+          {!uri ? 'Missing PDF file.' : 'Restoring your place…'}
+        </Text>
+        {!uri ? (
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={[styles.backText, { color: theme.accent }]}>Back</Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   }
@@ -144,6 +180,22 @@ export default function ReaderScreen() {
             onZoomIn={() => viewerRef.current?.zoomIn()}
             onZoomOut={() => viewerRef.current?.zoomOut()}
           />
+          <SearchBar
+            theme={theme}
+            matchCount={matchCount}
+            matchIndex={matchIndex}
+            onSearch={(query) => viewerRef.current?.search(query)}
+            onNext={() => viewerRef.current?.searchNext()}
+            onPrev={() => viewerRef.current?.searchPrev()}
+          />
+          <BookmarkBar
+            theme={theme}
+            page={page}
+            bookmarks={bookmarks}
+            onToggle={toggleBookmark}
+            onJump={goPage}
+          />
+          <PageScrubber theme={theme} page={page} pageCount={pageCount} onSelect={goPage} />
           <ThemeControls
             theme={theme}
             activeTheme={themeId}
@@ -163,6 +215,10 @@ export default function ReaderScreen() {
           onLoad={onLoad}
           onPageChange={onPageChange}
           onTap={() => setChromeVisible((v) => !v)}
+          onSearchResult={(count, index) => {
+            setMatchCount(count);
+            setMatchIndex(index);
+          }}
           onError={setError}
         />
         <View
@@ -178,7 +234,7 @@ export default function ReaderScreen() {
         <View pointerEvents="none" style={[styles.tint, { backgroundColor: theme.pdfTint }]} />
       </View>
       {error ? (
-        <View style={styles.errorBanner}>
+        <View style={styles.errorBanner} accessibilityLiveRegion="polite">
           <Text style={styles.error}>{error}</Text>
         </View>
       ) : null}
