@@ -9,6 +9,8 @@ type Props = {
   fitMode: FitMode;
   onPrev: () => void;
   onNext: () => void;
+  onFirst: () => void;
+  onLast: () => void;
   onToggleScrollMode: () => void;
   onToggleFitMode: () => void;
   onZoomIn: () => void;
@@ -22,6 +24,8 @@ export function ReaderControls({
   fitMode,
   onPrev,
   onNext,
+  onFirst,
+  onLast,
   onToggleScrollMode,
   onToggleFitMode,
   onZoomIn,
@@ -32,6 +36,9 @@ export function ReaderControls({
   return (
     <View style={styles.bar}>
       <View style={styles.row}>
+        <Pressable accessibilityRole="button" accessibilityLabel="First page" onPress={onFirst} style={styles.btn}>
+          <Text style={styles.btnText}>First</Text>
+        </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Previous page" onPress={onPrev} style={styles.btn}>
           <Text style={styles.btnText}>Prev</Text>
         </Pressable>
@@ -41,6 +48,9 @@ export function ReaderControls({
         </Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Next page" onPress={onNext} style={styles.btn}>
           <Text style={styles.btnText}>Next</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Last page" onPress={onLast} style={styles.btn}>
+          <Text style={styles.btnText}>Last</Text>
         </Pressable>
       </View>
       <View style={styles.row}>
@@ -82,7 +92,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   page: {
     color: '#F4F1EA',
@@ -92,7 +103,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   btn: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: '#1E2630',

@@ -226,6 +226,8 @@ export default function ReaderScreen() {
             fitMode={fitMode}
             onPrev={() => goPage(page - 1)}
             onNext={() => goPage(page + 1)}
+            onFirst={() => goPage(1)}
+            onLast={() => goPage(pageCount)}
             onToggleScrollMode={toggleScrollMode}
             onToggleFitMode={toggleFitMode}
             onZoomIn={() => viewerRef.current?.zoomIn()}
