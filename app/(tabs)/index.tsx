@@ -2,14 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
+import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
 import { pickPdfDocument } from '@/src/lib/pickPdf';
-import { loadLibrary, removeDocument, upsertDocument } from '@/src/store/libraryStore';
+import { loadLibrary, removeDocument, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import type { LibraryDocument } from '@/src/types';
 
 export default function LibraryScreen() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
+  const [renameId, setRenameId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const docs = await loadLibrary();
@@ -80,12 +82,33 @@ export default function LibraryScreen() {
     );
   }, [documents]);
 
+  const renaming = documents.find((d) => d.id === renameId) ?? null;
+
+  const onSaveRename = useCallback(
+    async (name: string) => {
+      if (!renameId) return;
+      await updateDocument(renameId, { name });
+      setRenameId(null);
+      await refresh();
+    },
+    [refresh, renameId],
+  );
+
   return (
-    <LibraryView
-      documents={documents}
-      onOpenDocument={openPicker}
-      onSelectDocument={openDocument}
-      onRemoveDocument={onRemoveDocument}
-    />
+    <>
+      <LibraryView
+        documents={documents}
+        onOpenDocument={openPicker}
+        onSelectDocument={openDocument}
+        onRemoveDocument={onRemoveDocument}
+        onRenameDocument={setRenameId}
+      />
+      <RenameDocumentModal
+        visible={Boolean(renaming)}
+        initialName={renaming?.name ?? ''}
+        onCancel={() => setRenameId(null)}
+        onSave={onSaveRename}
+      />
+    </>
   );
 }

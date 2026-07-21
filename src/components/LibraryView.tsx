@@ -19,6 +19,7 @@ type LibraryScreenProps = {
   onOpenDocument?: () => void;
   onSelectDocument?: (id: string) => void;
   onRemoveDocument?: (id: string) => void;
+  onRenameDocument?: (id: string) => void;
 };
 
 function formatRelative(ts: number): string {
@@ -37,6 +38,7 @@ export function LibraryView({
   onOpenDocument,
   onSelectDocument,
   onRemoveDocument,
+  onRenameDocument,
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const empty = documents.length === 0;
@@ -97,6 +99,16 @@ export function LibraryView({
                   </Text>
                 </View>
               </Pressable>
+              {onRenameDocument ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Rename ${doc.name}`}
+                  hitSlop={8}
+                  onPress={() => onRenameDocument(doc.id)}
+                  style={styles.renameBtn}>
+                  <Text style={styles.renameText}>Rename</Text>
+                </Pressable>
+              ) : null}
               {onRemoveDocument ? (
                 <Pressable
                   accessibilityRole="button"
@@ -231,6 +243,17 @@ const styles = StyleSheet.create({
   },
   removeText: {
     color: '#E8A0A0',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  renameBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#1E2630',
+  },
+  renameText: {
+    color: '#C4A574',
     fontSize: 12,
     fontWeight: '700',
   },
