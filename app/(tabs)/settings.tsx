@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { loadSettings, saveSettings } from '@/src/store/libraryStore';
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { clearLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
 import { defaultSettings } from '@/src/store/constants';
 import type { FitMode, ReaderSettings, ReadingThemeId, ScrollMode } from '@/src/types';
@@ -22,6 +22,24 @@ export default function SettingsScreen() {
       saveSettings(next).catch(() => undefined);
       return next;
     });
+  }, []);
+
+  const onClearLibrary = useCallback(() => {
+    Alert.alert(
+      'Clear library?',
+      'This removes all recent documents from Aado. The PDF files on your device are not deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            await clearLibrary();
+            Alert.alert('Library cleared', 'Your recent documents list is empty.');
+          },
+        },
+      ],
+    );
   }, []);
 
   if (!loaded) {
@@ -129,6 +147,16 @@ export default function SettingsScreen() {
           );
         })}
       </View>
+
+      <Text style={styles.section}>Library</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Clear recent library"
+        onPress={onClearLibrary}
+        style={styles.dangerBtn}>
+        <Text style={styles.dangerText}>Clear recent documents</Text>
+      </Pressable>
+      <Text style={styles.hint}>Does not delete PDF files from your device.</Text>
     </View>
   );
 }
@@ -212,5 +240,25 @@ const styles = StyleSheet.create({
   switchBody: {
     color: '#9CA3AF',
     fontSize: 13,
+  },
+  dangerBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#2A1A1A',
+    borderWidth: 1,
+    borderColor: '#4A2A2A',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  dangerText: {
+    color: '#E8A0A0',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  hint: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginBottom: 24,
   },
 });
