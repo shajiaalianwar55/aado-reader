@@ -1,5 +1,6 @@
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -41,7 +42,10 @@ export function LibraryView({
   const empty = documents.length === 0;
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+      keyboardShouldPersistTaps="handled">
       <Text style={styles.brand} accessibilityRole="header">
         Aado
       </Text>
@@ -107,7 +111,7 @@ export function LibraryView({
           ))}
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -115,6 +119,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F1419',
+  },
+  content: {
     paddingHorizontal: 24,
     paddingTop: 12,
   },

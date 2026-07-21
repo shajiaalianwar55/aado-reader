@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
 import { defaultSettings } from '@/src/store/constants';
 import type { FitMode, ReaderSettings, ReadingThemeId, ScrollMode } from '@/src/types';
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<ReaderSettings>(defaultSettings);
   const [loaded, setLoaded] = useState(false);
 
@@ -51,7 +53,10 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
+      keyboardShouldPersistTaps="handled">
       <Text style={styles.brand}>Aado</Text>
       <Text style={styles.title}>Reading defaults</Text>
       <Text style={styles.subtitle}>
@@ -157,7 +162,7 @@ export default function SettingsScreen() {
         <Text style={styles.dangerText}>Clear recent documents</Text>
       </Pressable>
       <Text style={styles.hint}>Does not delete PDF files from your device.</Text>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -165,6 +170,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F1419',
+  },
+  content: {
     paddingHorizontal: 24,
     paddingTop: 12,
   },
