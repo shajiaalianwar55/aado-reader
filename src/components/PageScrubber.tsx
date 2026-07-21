@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { ThemeTokens } from '@/src/theme/readingThemes';
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
 };
 
 export function PageScrubber({ theme, page, pageCount, onSelect }: Props) {
+  const [draft, setDraft] = useState('');
+
   const pages = useMemo(() => {
     if (pageCount <= 0) return [] as number[];
     if (pageCount <= 12) {
@@ -24,9 +26,43 @@ export function PageScrubber({ theme, page, pageCount, onSelect }: Props) {
 
   if (pageCount <= 0) return null;
 
+  const submitGoTo = () => {
+    const parsed = Number.parseInt(draft, 10);
+    if (!Number.isFinite(parsed)) return;
+    onSelect(parsed);
+    setDraft('');
+  };
+
   return (
     <View style={[styles.wrap, { borderTopColor: theme.border }]}>
       <Text style={[styles.label, { color: theme.textMuted }]}>Jump to page</Text>
+      <View style={styles.goRow}>
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          keyboardType="number-pad"
+          returnKeyType="go"
+          placeholder={`1–${pageCount}`}
+          placeholderTextColor={theme.textMuted}
+          accessibilityLabel="Enter page number"
+          onSubmitEditing={submitGoTo}
+          style={[
+            styles.input,
+            {
+              color: theme.text,
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go to entered page"
+          onPress={submitGoTo}
+          style={[styles.goBtn, { backgroundColor: theme.accent }]}>
+          <Text style={[styles.goBtnText, { color: theme.background }]}>Go</Text>
+        </Pressable>
+      </View>
       <View style={styles.row}>
         {pages.map((p, index) => {
           const prev = pages[index - 1];
@@ -68,6 +104,28 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  goRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+  },
+  goBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  goBtnText: {
+    fontWeight: '700',
+    fontSize: 14,
   },
   row: {
     flexDirection: 'row',
