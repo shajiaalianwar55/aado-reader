@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
+import * as Sharing from 'expo-sharing';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
 import { PageScrubber } from '@/src/components/PageScrubber';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
@@ -156,6 +157,24 @@ export default function ReaderScreen() {
       .catch(() => undefined);
   }, []);
 
+  const onShare = useCallback(async () => {
+    if (!uri) return;
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert('Sharing unavailable', 'Sharing is not supported on this device.');
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: title,
+        UTI: 'com.adobe.pdf',
+      });
+    } catch (error) {
+      Alert.alert('Could not share', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [title, uri]);
+
   if (!uri || !restored) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
@@ -181,6 +200,16 @@ export default function ReaderScreen() {
       onBack={() => router.back()}
       topInset={insets.top}
       bottomInset={insets.bottom}
+      topExtra={
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Share PDF"
+          onPress={onShare}
+          hitSlop={8}
+          style={styles.shareBtn}>
+          <Text style={[styles.shareText, { color: theme.accent }]}>Share</Text>
+        </Pressable>
+      }
       bottom={
         <>
           <ReaderControls
@@ -280,6 +309,14 @@ const styles = StyleSheet.create({
   backText: {
     fontWeight: '600',
     fontSize: 16,
+  },
+  shareBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  shareText: {
+    fontWeight: '700',
+    fontSize: 15,
   },
   error: {
     textAlign: 'center',
