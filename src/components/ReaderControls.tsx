@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { FitMode, ScrollMode } from '@/src/types';
+import { formatReadingProgress } from '@/src/lib/readingProgress';
 
 type Props = {
   page: number;
@@ -26,6 +27,8 @@ export function ReaderControls({
   onZoomIn,
   onZoomOut,
 }: Props) {
+  const progress = formatReadingProgress(page, pageCount);
+
   return (
     <View style={styles.bar}>
       <View style={styles.row}>
@@ -34,6 +37,7 @@ export function ReaderControls({
         </Pressable>
         <Text style={styles.page}>
           {page} / {pageCount || '—'}
+          {progress ? ` · ${progress}` : ''}
         </Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Next page" onPress={onNext} style={styles.btn}>
           <Text style={styles.btnText}>Next</Text>

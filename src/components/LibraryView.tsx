@@ -5,6 +5,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { formatReadingProgress } from '@/src/lib/readingProgress';
 
 type LibraryScreenProps = {
   documents?: Array<{
@@ -83,8 +84,12 @@ export function LibraryView({
                     {doc.name}
                   </Text>
                   <Text style={styles.docMeta}>
-                    Page {doc.lastPage}
-                    {doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''} · {formatRelative(doc.lastOpened)}
+                    {(() => {
+                      const progress = formatReadingProgress(doc.lastPage, doc.pageCount);
+                      return `Page ${doc.lastPage}${doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''}${
+                        progress ? ` · ${progress}` : ''
+                      } · ${formatRelative(doc.lastOpened)}`;
+                    })()}
                   </Text>
                 </View>
               </Pressable>
