@@ -12,6 +12,7 @@ import { ReaderChrome } from '@/src/components/ReaderChrome';
 import { ReaderControls } from '@/src/components/ReaderControls';
 import { SearchBar } from '@/src/components/SearchBar';
 import { ThemeControls } from '@/src/components/ThemeControls';
+import { useAutoHideChrome } from '@/src/hooks/useAutoHideChrome';
 import { useReadingProgress } from '@/src/hooks/useReadingProgress';
 import { useReadingSession } from '@/src/hooks/useReadingSession';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
@@ -44,6 +45,7 @@ export default function ReaderScreen() {
 
   useReadingSession(Boolean(uri) && keepAwake);
   useReadingProgress(params.id, page);
+  const { bump: bumpChrome } = useAutoHideChrome(chromeVisible, setChromeVisible);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,10 +115,15 @@ export default function ReaderScreen() {
       const clamped = Math.min(Math.max(next, 1), pageCount);
       setPage(clamped);
       viewerRef.current?.setPage(clamped);
+      bumpChrome();
       Haptics.selectionAsync().catch(() => undefined);
     },
-    [pageCount],
+    [bumpChrome, pageCount],
   );
+
+  const toggleChrome = useCallback(() => {
+    setChromeVisible((v) => !v);
+  }, []);
 
   const toggleScrollMode = useCallback(() => {
     setScrollMode((mode) => {
@@ -258,7 +265,7 @@ export default function ReaderScreen() {
           scrollMode={scrollMode}
           onLoad={onLoad}
           onPageChange={onPageChange}
-          onTap={() => setChromeVisible((v) => !v)}
+          onTap={toggleChrome}
           onSearchResult={(count, index) => {
             setMatchCount(count);
             setMatchIndex(index);
