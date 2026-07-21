@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
@@ -162,6 +163,18 @@ export default function SettingsScreen() {
         <Text style={styles.dangerText}>Clear recent documents</Text>
       </Pressable>
       <Text style={styles.hint}>Does not delete PDF files from your device.</Text>
+
+      <Text style={styles.section}>About</Text>
+      <View style={styles.aboutCard}>
+        <Text style={styles.aboutTitle}>Aado Reader</Text>
+        <Text style={styles.aboutBody}>
+          Version {Constants.expoConfig?.version ?? '1.0.0'}
+        </Text>
+        <Text style={styles.aboutBody}>
+          A calm PDF reader focused on comfortable reading — themes, search, bookmarks, and resume.
+        </Text>
+        <Text style={styles.aboutMeta}>Shajia Ali Anwar</Text>
+      </View>
     </ScrollView>
   );
 }
@@ -267,5 +280,30 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 12,
     marginBottom: 24,
+  },
+  aboutCard: {
+    borderWidth: 1,
+    borderColor: '#1E2630',
+    backgroundColor: '#141A22',
+    borderRadius: 12,
+    padding: 16,
+    gap: 6,
+    marginBottom: 12,
+  },
+  aboutTitle: {
+    color: '#F4F1EA',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  aboutBody: {
+    color: '#9CA3AF',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  aboutMeta: {
+    color: '#C4A574',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
   },
 });
