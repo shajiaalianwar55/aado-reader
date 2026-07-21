@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
 import { pickPdfDocument } from '@/src/lib/pickPdf';
-import { loadLibrary, upsertDocument } from '@/src/store/libraryStore';
+import { loadLibrary, removeDocument, upsertDocument } from '@/src/store/libraryStore';
 import type { LibraryDocument } from '@/src/types';
 
 export default function LibraryScreen() {
@@ -61,11 +61,31 @@ export default function LibraryScreen() {
     [documents, router],
   );
 
+  const onRemoveDocument = useCallback((id: string) => {
+    const doc = documents.find((d) => d.id === id);
+    Alert.alert(
+      'Remove from library?',
+      doc ? `"${doc.name}" will be removed from recent files.` : 'This document will be removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const next = await removeDocument(id);
+            setDocuments(next);
+          },
+        },
+      ],
+    );
+  }, [documents]);
+
   return (
     <LibraryView
       documents={documents}
       onOpenDocument={openPicker}
       onSelectDocument={openDocument}
+      onRemoveDocument={onRemoveDocument}
     />
   );
 }

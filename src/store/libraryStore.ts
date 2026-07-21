@@ -47,6 +47,17 @@ export async function updateDocument(
   return updated;
 }
 
+export async function removeDocument(id: string): Promise<LibraryDocument[]> {
+  const docs = await loadLibrary();
+  const next = docs.filter((d) => d.id !== id);
+  await saveLibrary(next);
+  return next;
+}
+
+export async function clearLibrary(): Promise<void> {
+  await saveLibrary([]);
+}
+
 export async function loadSettings(): Promise<ReaderSettings> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.settings);
   if (!raw) return defaultSettings;

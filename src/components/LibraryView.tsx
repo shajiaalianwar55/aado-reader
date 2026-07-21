@@ -16,6 +16,7 @@ type LibraryScreenProps = {
   }>;
   onOpenDocument?: () => void;
   onSelectDocument?: (id: string) => void;
+  onRemoveDocument?: (id: string) => void;
 };
 
 function formatRelative(ts: number): string {
@@ -33,6 +34,7 @@ export function LibraryView({
   documents = [],
   onOpenDocument,
   onSelectDocument,
+  onRemoveDocument,
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const empty = documents.length === 0;
@@ -67,25 +69,36 @@ export function LibraryView({
       ) : (
         <View style={styles.list}>
           {documents.map((doc) => (
-            <Pressable
-              key={doc.id}
-              accessibilityRole="button"
-              accessibilityLabel={`Open ${doc.name}`}
-              onPress={() => onSelectDocument?.(doc.id)}
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-              <View style={styles.thumb}>
-                <Text style={styles.thumbLabel}>PDF</Text>
-              </View>
-              <View style={styles.rowBody}>
-                <Text style={styles.docName} numberOfLines={2}>
-                  {doc.name}
-                </Text>
-                <Text style={styles.docMeta}>
-                  Page {doc.lastPage}
-                  {doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''} · {formatRelative(doc.lastOpened)}
-                </Text>
-              </View>
-            </Pressable>
+            <View key={doc.id} style={styles.row}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${doc.name}`}
+                onPress={() => onSelectDocument?.(doc.id)}
+                style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]}>
+                <View style={styles.thumb}>
+                  <Text style={styles.thumbLabel}>PDF</Text>
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={styles.docName} numberOfLines={2}>
+                    {doc.name}
+                  </Text>
+                  <Text style={styles.docMeta}>
+                    Page {doc.lastPage}
+                    {doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''} · {formatRelative(doc.lastOpened)}
+                  </Text>
+                </View>
+              </Pressable>
+              {onRemoveDocument ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${doc.name} from library`}
+                  hitSlop={8}
+                  onPress={() => onRemoveDocument(doc.id)}
+                  style={styles.removeBtn}>
+                  <Text style={styles.removeText}>Remove</Text>
+                </Pressable>
+              ) : null}
+            </View>
           ))}
         </View>
       )}
@@ -159,12 +172,18 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 10,
     padding: 12,
     borderRadius: 12,
     backgroundColor: '#141A22',
     borderWidth: 1,
     borderColor: '#1E2630',
+  },
+  rowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
   thumb: {
     width: 48,
@@ -192,5 +211,16 @@ const styles = StyleSheet.create({
   docMeta: {
     color: '#9CA3AF',
     fontSize: 13,
+  },
+  removeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#2A1A1A',
+  },
+  removeText: {
+    color: '#E8A0A0',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
