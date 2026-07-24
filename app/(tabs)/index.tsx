@@ -55,12 +55,38 @@ export default function LibraryScreen() {
     (id: string) => {
       const doc = documents.find((d) => d.id === id);
       if (!doc) return;
-      router.push({
-        pathname: '/reader/[id]',
-        params: { id: doc.id, uri: doc.uri, name: doc.name },
-      });
+
+      const open = (startPage?: number) => {
+        router.push({
+          pathname: '/reader/[id]',
+          params: {
+            id: doc.id,
+            uri: doc.uri,
+            name: doc.name,
+            ...(startPage != null ? { startPage: String(startPage) } : {}),
+          },
+        });
+      };
+
+      if (doc.lastPage > 1) {
+        Alert.alert('Open document', `Resume at page ${doc.lastPage}, or start from the beginning?`, [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Start over',
+            onPress: async () => {
+              await updateDocument(id, { lastPage: 1 });
+              await refresh();
+              open(1);
+            },
+          },
+          { text: 'Resume', onPress: () => open() },
+        ]);
+        return;
+      }
+
+      open();
     },
-    [documents, router],
+    [documents, refresh, router],
   );
 
   const onRemoveDocument = useCallback((id: string) => {

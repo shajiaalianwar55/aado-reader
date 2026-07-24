@@ -22,7 +22,7 @@ import type { FitMode, LibraryDocument, ReadingThemeId, ScrollMode } from '@/src
 export default function ReaderScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id: string; uri?: string; name?: string }>();
+  const params = useLocalSearchParams<{ id: string; uri?: string; name?: string; startPage?: string }>();
   const viewerRef = useRef<PdfViewerHandle>(null);
   const [doc, setDoc] = useState<LibraryDocument | null>(null);
   const [page, setPage] = useState(1);
@@ -62,7 +62,8 @@ export default function ReaderScreen() {
       if (cancelled) return;
       if (existing) {
         setDoc(existing);
-        setPage(existing.lastPage || 1);
+        const forced = params.startPage ? Number.parseInt(params.startPage, 10) : NaN;
+        setPage(Number.isFinite(forced) && forced > 0 ? forced : existing.lastPage || 1);
         setPageCount(existing.pageCount || 0);
         setBookmarks(existing.bookmarks ?? []);
         setRestored(true);
