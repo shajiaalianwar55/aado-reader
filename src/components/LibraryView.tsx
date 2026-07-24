@@ -58,15 +58,16 @@ export function LibraryView({
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<LibrarySortMode>('recent');
+  const [pinnedOnly, setPinnedOnly] = useState(false);
   const emptyLibrary = documents.length === 0;
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const base = needle
-      ? documents.filter((doc) => doc.name.toLowerCase().includes(needle))
-      : documents;
+    let base = documents;
+    if (pinnedOnly) base = base.filter((doc) => doc.pinned);
+    if (needle) base = base.filter((doc) => doc.name.toLowerCase().includes(needle));
     return sortLibraryByMode(base, sortMode);
-  }, [documents, query, sortMode]);
+  }, [documents, query, sortMode, pinnedOnly]);
 
   const empty = emptyLibrary || filtered.length === 0;
 
@@ -148,6 +149,15 @@ export function LibraryView({
                 </Pressable>
               );
             })}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={pinnedOnly ? 'Show all documents' : 'Show pinned only'}
+              onPress={() => setPinnedOnly((v) => !v)}
+              style={[styles.sortChip, pinnedOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, pinnedOnly && styles.sortChipTextActive]}>
+                Pinned
+              </Text>
+            </Pressable>
           </View>
         </>
       ) : null}
@@ -160,7 +170,9 @@ export function LibraryView({
           <Text style={styles.emptyBody}>
             {emptyLibrary
               ? 'Documents you open appear in this list so you can jump back to the last page you read.'
-              : `No documents match “${query.trim()}”.`}
+              : pinnedOnly && !query.trim()
+                ? 'No pinned documents yet. Pin a PDF to keep it here.'
+                : `No documents match “${query.trim()}”.`}
           </Text>
         </View>
       ) : (

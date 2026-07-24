@@ -90,7 +90,7 @@ export default function ReaderScreen() {
     return () => {
       cancelled = true;
     };
-  }, [params.id, params.uri, params.name]);
+  }, [params.id, params.uri, params.name, params.startPage]);
 
   const onLoad = useCallback(
     async (count: number) => {
