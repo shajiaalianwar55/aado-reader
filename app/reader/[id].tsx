@@ -77,6 +77,7 @@ export default function ReaderScreen() {
           lastPage: 1,
           pageCount: 0,
           bookmarks: [],
+          pinned: false,
         };
         await upsertDocument(created);
         if (!cancelled) {

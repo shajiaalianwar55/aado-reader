@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatReadingProgress } from '@/src/lib/readingProgress';
+import { sortLibraryByMode } from '@/src/store/constants';
+import type { LibrarySortMode } from '@/src/types';
 
 type LibraryScreenProps = {
   documents?: Array<{
@@ -26,6 +28,12 @@ type LibraryScreenProps = {
   onTogglePin?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
 };
+
+const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
+  { id: 'recent', label: 'Recent' },
+  { id: 'name', label: 'Name' },
+  { id: 'progress', label: 'Progress' },
+];
 
 function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
@@ -49,13 +57,16 @@ export function LibraryView({
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
+  const [sortMode, setSortMode] = useState<LibrarySortMode>('recent');
   const emptyLibrary = documents.length === 0;
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return documents;
-    return documents.filter((doc) => doc.name.toLowerCase().includes(needle));
-  }, [documents, query]);
+    const base = needle
+      ? documents.filter((doc) => doc.name.toLowerCase().includes(needle))
+      : documents;
+    return sortLibraryByMode(base, sortMode);
+  }, [documents, query, sortMode]);
 
   const empty = emptyLibrary || filtered.length === 0;
 
@@ -83,15 +94,34 @@ export function LibraryView({
       </Pressable>
 
       {!emptyLibrary ? (
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search library"
-          placeholderTextColor="#6B7280"
-          accessibilityLabel="Search library by name"
-          clearButtonMode="while-editing"
-          style={styles.search}
-        />
+        <>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search library"
+            placeholderTextColor="#6B7280"
+            accessibilityLabel="Search library by name"
+            clearButtonMode="while-editing"
+            style={styles.search}
+          />
+          <View style={styles.sortRow}>
+            {SORT_OPTIONS.map((option) => {
+              const active = sortMode === option.id;
+              return (
+                <Pressable
+                  key={option.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Sort by ${option.label}`}
+                  onPress={() => setSortMode(option.id)}
+                  style={[styles.sortChip, active && styles.sortChipActive]}>
+                  <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
       ) : null}
 
       {empty ? (
@@ -233,7 +263,33 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: '#F4F1EA',
     fontSize: 15,
+    marginBottom: 12,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 16,
+  },
+  sortChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#141A22',
+    borderWidth: 1,
+    borderColor: '#1E2630',
+  },
+  sortChipActive: {
+    backgroundColor: '#C4A574',
+    borderColor: '#C4A574',
+  },
+  sortChipText: {
+    color: '#E8EAED',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sortChipTextActive: {
+    color: '#0F1419',
   },
   pressed: {
     opacity: 0.85,

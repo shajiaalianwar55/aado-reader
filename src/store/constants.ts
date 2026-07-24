@@ -26,3 +26,22 @@ export function sortLibrary(docs: LibraryDocument[]): LibraryDocument[] {
     return b.lastOpened - a.lastOpened;
   });
 }
+
+export function sortLibraryByMode(
+  docs: LibraryDocument[],
+  mode: import('@/src/types').LibrarySortMode,
+): LibraryDocument[] {
+  return [...docs].sort((a, b) => {
+    const pinDiff = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
+    if (pinDiff !== 0) return pinDiff;
+    if (mode === 'name') {
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    }
+    if (mode === 'progress') {
+      const aPct = a.pageCount > 0 ? a.lastPage / a.pageCount : 0;
+      const bPct = b.pageCount > 0 ? b.lastPage / b.pageCount : 0;
+      return bPct - aPct;
+    }
+    return b.lastOpened - a.lastOpened;
+  });
+}
