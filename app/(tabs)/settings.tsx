@@ -149,6 +149,28 @@ export default function SettingsScreen() {
         />
       </View>
 
+      <Text style={styles.section}>Auto-hide controls</Text>
+      <View style={styles.row}>
+        {[
+          { ms: 0, label: 'Off' },
+          { ms: 3000, label: '3s' },
+          { ms: 4000, label: '4s' },
+          { ms: 8000, label: '8s' },
+        ].map((option) => {
+          const active = settings.autoHideMs === option.ms;
+          return (
+            <Pressable
+              key={option.ms}
+              accessibilityRole="button"
+              accessibilityLabel={`Auto-hide controls ${option.label}`}
+              onPress={() => update({ autoHideMs: option.ms })}
+              style={[styles.chip, active && styles.chipActive]}>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <Text style={styles.section}>Brightness</Text>
       <View style={styles.row}>
         {[0.55, 0.7, 0.85, 1].map((step) => {
