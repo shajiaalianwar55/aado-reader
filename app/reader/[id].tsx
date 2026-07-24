@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
+import { ChromeTapHint } from '@/src/components/ChromeTapHint';
 import { PageScrubber } from '@/src/components/PageScrubber';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
 import { ReaderChrome } from '@/src/components/ReaderChrome';
@@ -336,6 +337,7 @@ export default function ReaderScreen() {
           <Text style={styles.error}>{error}</Text>
         </View>
       ) : null}
+      <ChromeTapHint visible={!chromeVisible} theme={theme} bottomInset={insets.bottom} />
     </ReaderChrome>
     </>
   );
