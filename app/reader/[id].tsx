@@ -3,7 +3,6 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
 import { ChromeTapHint } from '@/src/components/ChromeTapHint';
@@ -16,6 +15,7 @@ import { ThemeControls } from '@/src/components/ThemeControls';
 import { useAutoHideChrome } from '@/src/hooks/useAutoHideChrome';
 import { useReadingProgress } from '@/src/hooks/useReadingProgress';
 import { useReadingSession } from '@/src/hooks/useReadingSession';
+import { lightImpactHaptic, selectionHaptic } from '@/src/lib/haptics';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
 import type { FitMode, LibraryDocument, ReadingThemeId, ScrollMode } from '@/src/types';
@@ -35,6 +35,8 @@ export default function ReaderScreen() {
   const [themeId, setThemeId] = useState<ReadingThemeId>('night');
   const [brightness, setBrightness] = useState(1);
   const [keepAwake, setKeepAwake] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [autoHideMs, setAutoHideMs] = useState(4000);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [matchCount, setMatchCount] = useState(0);
   const [matchIndex, setMatchIndex] = useState(-1);
@@ -46,7 +48,7 @@ export default function ReaderScreen() {
 
   useReadingSession(Boolean(uri) && keepAwake);
   useReadingProgress(params.id, page);
-  const { bump: bumpChrome } = useAutoHideChrome(chromeVisible, setChromeVisible);
+  const { bump: bumpChrome } = useAutoHideChrome(chromeVisible, setChromeVisible, autoHideMs);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +60,8 @@ export default function ReaderScreen() {
         setFitMode(settings.fitMode);
         setScrollMode(settings.scrollMode);
         setKeepAwake(settings.keepAwake);
+        setHapticsEnabled(settings.haptics ?? true);
+        setAutoHideMs(settings.autoHideMs ?? 4000);
       }
       const existing = await getDocument(params.id);
       if (cancelled) return;
@@ -106,11 +110,11 @@ export default function ReaderScreen() {
   const onPageChange = useCallback((next: number) => {
     setPage((prev) => {
       if (prev !== next) {
-        Haptics.selectionAsync().catch(() => undefined);
+        selectionHaptic(hapticsEnabled);
       }
       return next;
     });
-  }, []);
+  }, [hapticsEnabled]);
 
   const goPage = useCallback(
     (next: number) => {
@@ -119,9 +123,9 @@ export default function ReaderScreen() {
       setPage(clamped);
       viewerRef.current?.setPage(clamped);
       bumpChrome();
-      Haptics.selectionAsync().catch(() => undefined);
+      selectionHaptic(hapticsEnabled);
     },
-    [bumpChrome, pageCount],
+    [bumpChrome, hapticsEnabled, pageCount],
   );
 
   const toggleChrome = useCallback(() => {
@@ -152,8 +156,8 @@ export default function ReaderScreen() {
     if (params.id) {
       await updateDocument(params.id, { bookmarks: next });
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-  }, [bookmarks, page, params.id]);
+    lightImpactHaptic(hapticsEnabled);
+  }, [bookmarks, hapticsEnabled, page, params.id]);
 
   const clearAllBookmarks = useCallback(() => {
     if (!bookmarks.length) return;

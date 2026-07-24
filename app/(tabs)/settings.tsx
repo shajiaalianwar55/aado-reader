@@ -135,6 +135,20 @@ export default function SettingsScreen() {
         />
       </View>
 
+      <View style={styles.switchRow}>
+        <View style={styles.switchCopy}>
+          <Text style={styles.switchTitle}>Haptic feedback</Text>
+          <Text style={styles.switchBody}>Light taps when changing pages or bookmarks</Text>
+        </View>
+        <Switch
+          accessibilityLabel="Enable haptic feedback"
+          value={settings.haptics}
+          onValueChange={(haptics) => update({ haptics })}
+          trackColor={{ false: '#2A3441', true: '#C4A574' }}
+          thumbColor="#F4F1EA"
+        />
+      </View>
+
       <Text style={styles.section}>Brightness</Text>
       <View style={styles.row}>
         {[0.55, 0.7, 0.85, 1].map((step) => {

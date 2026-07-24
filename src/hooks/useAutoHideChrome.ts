@@ -4,6 +4,7 @@ const DEFAULT_MS = 4000;
 
 /**
  * Hides reader chrome after a period of inactivity while it is visible.
+ * Pass delayMs <= 0 to disable auto-hide.
  * Any user interaction should call `bump` to reset the timer.
  */
 export function useAutoHideChrome(
@@ -22,20 +23,20 @@ export function useAutoHideChrome(
 
   const bump = useCallback(() => {
     clear();
-    if (!visible) return;
+    if (!visible || delayMs <= 0) return;
     timer.current = setTimeout(() => {
       setVisible(false);
     }, delayMs);
   }, [clear, delayMs, setVisible, visible]);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && delayMs > 0) {
       bump();
     } else {
       clear();
     }
     return clear;
-  }, [visible, bump, clear]);
+  }, [visible, bump, clear, delayMs]);
 
   return { bump, clear };
 }

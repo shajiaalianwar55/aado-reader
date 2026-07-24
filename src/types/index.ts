@@ -21,4 +21,6 @@ export type ReaderSettings = {
   fitMode: FitMode;
   scrollMode: ScrollMode;
   keepAwake: boolean;
+  haptics: boolean;
+  autoHideMs: number;
 };

@@ -12,6 +12,8 @@ export const defaultSettings: ReaderSettings = {
   fitMode: 'width',
   scrollMode: 'vertical',
   keepAwake: true,
+  haptics: true,
+  autoHideMs: 4000,
 };
 
 export function createDocumentId(uri: string, name: string): string {
