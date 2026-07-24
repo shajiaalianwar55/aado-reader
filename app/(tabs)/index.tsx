@@ -104,6 +104,29 @@ export default function LibraryScreen() {
     [documents, refresh],
   );
 
+  const onRestartDocument = useCallback(
+    (id: string) => {
+      const doc = documents.find((d) => d.id === id);
+      Alert.alert(
+        'Start from beginning?',
+        doc
+          ? `"${doc.name}" will open at page 1 next time.`
+          : 'Reading progress will reset to page 1.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Restart',
+            onPress: async () => {
+              await updateDocument(id, { lastPage: 1 });
+              await refresh();
+            },
+          },
+        ],
+      );
+    },
+    [documents, refresh],
+  );
+
   return (
     <>
       <LibraryView
@@ -113,6 +136,7 @@ export default function LibraryScreen() {
         onRemoveDocument={onRemoveDocument}
         onRenameDocument={setRenameId}
         onTogglePin={onTogglePin}
+        onRestartDocument={onRestartDocument}
       />
       <RenameDocumentModal
         visible={Boolean(renaming)}

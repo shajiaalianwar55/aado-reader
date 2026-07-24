@@ -182,6 +182,21 @@ export default function ReaderScreen() {
     }
   }, [title, uri]);
 
+  const onRestartReading = useCallback(() => {
+    Alert.alert('Start from beginning?', 'Jump back to page 1 and reset saved progress for this document.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Restart',
+        onPress: async () => {
+          goPage(1);
+          if (params.id) {
+            await updateDocument(params.id, { lastPage: 1 });
+          }
+        },
+      },
+    ]);
+  }, [goPage, params.id]);
+
   if (!uri || !restored) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
@@ -208,14 +223,24 @@ export default function ReaderScreen() {
       topInset={insets.top}
       bottomInset={insets.bottom}
       topExtra={
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Share PDF"
-          onPress={onShare}
-          hitSlop={8}
-          style={styles.shareBtn}>
-          <Text style={[styles.shareText, { color: theme.accent }]}>Share</Text>
-        </Pressable>
+        <View style={styles.topActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Restart from page 1"
+            onPress={onRestartReading}
+            hitSlop={8}
+            style={styles.shareBtn}>
+            <Text style={[styles.shareText, { color: theme.accent }]}>Restart</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share PDF"
+            onPress={onShare}
+            hitSlop={8}
+            style={styles.shareBtn}>
+            <Text style={[styles.shareText, { color: theme.accent }]}>Share</Text>
+          </Pressable>
+        </View>
       }
       bottom={
         <>
@@ -326,6 +351,11 @@ const styles = StyleSheet.create({
   shareText: {
     fontWeight: '700',
     fontSize: 15,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   error: {
     textAlign: 'center',

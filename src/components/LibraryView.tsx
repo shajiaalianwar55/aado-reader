@@ -24,6 +24,7 @@ type LibraryScreenProps = {
   onRemoveDocument?: (id: string) => void;
   onRenameDocument?: (id: string) => void;
   onTogglePin?: (id: string) => void;
+  onRestartDocument?: (id: string) => void;
 };
 
 function formatRelative(ts: number): string {
@@ -44,6 +45,7 @@ export function LibraryView({
   onRemoveDocument,
   onRenameDocument,
   onTogglePin,
+  onRestartDocument,
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
@@ -140,6 +142,16 @@ export function LibraryView({
                     <Text style={[styles.actionText, doc.pinned && styles.pinActiveText]}>
                       {doc.pinned ? 'Unpin' : 'Pin'}
                     </Text>
+                  </Pressable>
+                ) : null}
+                {onRestartDocument && doc.lastPage > 1 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Restart ${doc.name} from page 1`}
+                    hitSlop={8}
+                    onPress={() => onRestartDocument(doc.id)}
+                    style={styles.actionBtn}>
+                    <Text style={styles.renameText}>Restart</Text>
                   </Pressable>
                 ) : null}
                 {onRenameDocument ? (
