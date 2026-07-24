@@ -10,7 +10,10 @@ export type LibraryDocument = {
   lastPage: number;
   pageCount: number;
   bookmarks: number[];
+  pinned?: boolean;
 };
+
+export type LibrarySortMode = 'recent' | 'name' | 'progress';
 
 export type ReaderSettings = {
   theme: ReadingThemeId;

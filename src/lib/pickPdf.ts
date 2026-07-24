@@ -26,5 +26,6 @@ export async function pickPdfDocument(): Promise<LibraryDocument | null> {
     lastPage: 1,
     pageCount: 0,
     bookmarks: [],
+    pinned: false,
   };
 }

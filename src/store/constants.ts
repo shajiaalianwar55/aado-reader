@@ -20,5 +20,9 @@ export function createDocumentId(uri: string, name: string): string {
 }
 
 export function sortLibrary(docs: LibraryDocument[]): LibraryDocument[] {
-  return [...docs].sort((a, b) => b.lastOpened - a.lastOpened);
+  return [...docs].sort((a, b) => {
+    const pinDiff = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
+    if (pinDiff !== 0) return pinDiff;
+    return b.lastOpened - a.lastOpened;
+  });
 }

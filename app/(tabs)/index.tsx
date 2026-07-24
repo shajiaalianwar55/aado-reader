@@ -94,6 +94,16 @@ export default function LibraryScreen() {
     [refresh, renameId],
   );
 
+  const onTogglePin = useCallback(
+    async (id: string) => {
+      const doc = documents.find((d) => d.id === id);
+      if (!doc) return;
+      await updateDocument(id, { pinned: !doc.pinned });
+      await refresh();
+    },
+    [documents, refresh],
+  );
+
   return (
     <>
       <LibraryView
@@ -102,6 +112,7 @@ export default function LibraryScreen() {
         onSelectDocument={openDocument}
         onRemoveDocument={onRemoveDocument}
         onRenameDocument={setRenameId}
+        onTogglePin={onTogglePin}
       />
       <RenameDocumentModal
         visible={Boolean(renaming)}

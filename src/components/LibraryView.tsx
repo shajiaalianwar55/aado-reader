@@ -15,11 +15,13 @@ type LibraryScreenProps = {
     lastOpened: number;
     lastPage: number;
     pageCount: number;
+    pinned?: boolean;
   }>;
   onOpenDocument?: () => void;
   onSelectDocument?: (id: string) => void;
   onRemoveDocument?: (id: string) => void;
   onRenameDocument?: (id: string) => void;
+  onTogglePin?: (id: string) => void;
 };
 
 function formatRelative(ts: number): string {
@@ -39,6 +41,7 @@ export function LibraryView({
   onSelectDocument,
   onRemoveDocument,
   onRenameDocument,
+  onTogglePin,
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const empty = documents.length === 0;
@@ -76,14 +79,14 @@ export function LibraryView({
       ) : (
         <View style={styles.list}>
           {documents.map((doc) => (
-            <View key={doc.id} style={styles.row}>
+            <View key={doc.id} style={[styles.row, doc.pinned && styles.rowPinned]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${doc.name}`}
                 onPress={() => onSelectDocument?.(doc.id)}
                 style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]}>
                 <View style={styles.thumb}>
-                  <Text style={styles.thumbLabel}>PDF</Text>
+                  <Text style={styles.thumbLabel}>{doc.pinned ? 'PIN' : 'PDF'}</Text>
                 </View>
                 <View style={styles.rowBody}>
                   <Text style={styles.docName} numberOfLines={2}>
@@ -99,26 +102,40 @@ export function LibraryView({
                   </Text>
                 </View>
               </Pressable>
-              {onRenameDocument ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Rename ${doc.name}`}
-                  hitSlop={8}
-                  onPress={() => onRenameDocument(doc.id)}
-                  style={styles.renameBtn}>
-                  <Text style={styles.renameText}>Rename</Text>
-                </Pressable>
-              ) : null}
-              {onRemoveDocument ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove ${doc.name} from library`}
-                  hitSlop={8}
-                  onPress={() => onRemoveDocument(doc.id)}
-                  style={styles.removeBtn}>
-                  <Text style={styles.removeText}>Remove</Text>
-                </Pressable>
-              ) : null}
+              <View style={styles.actions}>
+                {onTogglePin ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={doc.pinned ? `Unpin ${doc.name}` : `Pin ${doc.name}`}
+                    hitSlop={8}
+                    onPress={() => onTogglePin(doc.id)}
+                    style={[styles.actionBtn, doc.pinned && styles.pinActive]}>
+                    <Text style={[styles.actionText, doc.pinned && styles.pinActiveText]}>
+                      {doc.pinned ? 'Unpin' : 'Pin'}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {onRenameDocument ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Rename ${doc.name}`}
+                    hitSlop={8}
+                    onPress={() => onRenameDocument(doc.id)}
+                    style={styles.actionBtn}>
+                    <Text style={styles.renameText}>Rename</Text>
+                  </Pressable>
+                ) : null}
+                {onRemoveDocument ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${doc.name} from library`}
+                    hitSlop={8}
+                    onPress={() => onRemoveDocument(doc.id)}
+                    style={styles.removeBtn}>
+                    <Text style={styles.removeText}>Remove</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
           ))}
         </View>
@@ -195,12 +212,15 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     padding: 12,
     borderRadius: 12,
     backgroundColor: '#141A22',
     borderWidth: 1,
     borderColor: '#1E2630',
+  },
+  rowPinned: {
+    borderColor: '#C4A574',
   },
   rowMain: {
     flex: 1,
@@ -235,6 +255,28 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontSize: 13,
   },
+  actions: {
+    gap: 6,
+    alignItems: 'stretch',
+  },
+  actionBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#1E2630',
+  },
+  actionText: {
+    color: '#C4A574',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  pinActive: {
+    backgroundColor: '#C4A574',
+  },
+  pinActiveText: {
+    color: '#0F1419',
+  },
   removeBtn: {
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -245,16 +287,12 @@ const styles = StyleSheet.create({
     color: '#E8A0A0',
     fontSize: 12,
     fontWeight: '700',
-  },
-  renameBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#1E2630',
+    textAlign: 'center',
   },
   renameText: {
     color: '#C4A574',
     fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
 });
