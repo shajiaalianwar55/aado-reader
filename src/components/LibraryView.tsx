@@ -70,6 +70,14 @@ export function LibraryView({
 
   const empty = emptyLibrary || filtered.length === 0;
 
+  const continueDoc = useMemo(() => {
+    if (emptyLibrary || query.trim()) return null;
+    const unfinished = documents
+      .filter((d) => d.lastPage > 1 && (d.pageCount === 0 || d.lastPage < d.pageCount))
+      .sort((a, b) => b.lastOpened - a.lastOpened);
+    return unfinished[0] ?? null;
+  }, [documents, emptyLibrary, query]);
+
   return (
     <ScrollView
       style={styles.container}
@@ -92,6 +100,26 @@ export function LibraryView({
         style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
         <Text style={styles.primaryButtonText}>Open PDF</Text>
       </Pressable>
+
+      {continueDoc ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Continue reading ${continueDoc.name}`}
+          onPress={() => onSelectDocument?.(continueDoc.id)}
+          style={({ pressed }) => [styles.continueCard, pressed && styles.pressed]}>
+          <Text style={styles.continueEyebrow}>Continue reading</Text>
+          <Text style={styles.continueTitle} numberOfLines={2}>
+            {continueDoc.name}
+          </Text>
+          <Text style={styles.continueMeta}>
+            Page {continueDoc.lastPage}
+            {continueDoc.pageCount > 0 ? ` of ${continueDoc.pageCount}` : ''}
+            {formatReadingProgress(continueDoc.lastPage, continueDoc.pageCount)
+              ? ` · ${formatReadingProgress(continueDoc.lastPage, continueDoc.pageCount)}`
+              : ''}
+          </Text>
+        </Pressable>
+      ) : null}
 
       {!emptyLibrary ? (
         <>
@@ -253,6 +281,32 @@ const styles = StyleSheet.create({
     color: '#0F1419',
     fontSize: 16,
     fontWeight: '700',
+  },
+  continueCard: {
+    borderWidth: 1,
+    borderColor: '#C4A574',
+    backgroundColor: '#1A222D',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 4,
+  },
+  continueEyebrow: {
+    color: '#C4A574',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  continueTitle: {
+    color: '#F4F1EA',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  continueMeta: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    marginTop: 2,
   },
   search: {
     borderWidth: 1,
