@@ -1,8 +1,10 @@
+import { useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,7 +46,16 @@ export function LibraryView({
   onTogglePin,
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
-  const empty = documents.length === 0;
+  const [query, setQuery] = useState('');
+  const emptyLibrary = documents.length === 0;
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return documents;
+    return documents.filter((doc) => doc.name.toLowerCase().includes(needle));
+  }, [documents, query]);
+
+  const empty = emptyLibrary || filtered.length === 0;
 
   return (
     <ScrollView
@@ -56,7 +67,7 @@ export function LibraryView({
       </Text>
       <Text style={styles.title}>Your library</Text>
       <Text style={styles.subtitle}>
-        {empty
+        {emptyLibrary
           ? 'Open a PDF to start a calm reading session.'
           : `${documents.length} recent document${documents.length === 1 ? '' : 's'}`}
       </Text>
@@ -69,16 +80,32 @@ export function LibraryView({
         <Text style={styles.primaryButtonText}>Open PDF</Text>
       </Pressable>
 
+      {!emptyLibrary ? (
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search library"
+          placeholderTextColor="#6B7280"
+          accessibilityLabel="Search library by name"
+          clearButtonMode="while-editing"
+          style={styles.search}
+        />
+      ) : null}
+
       {empty ? (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>Nothing here yet</Text>
+          <Text style={styles.emptyTitle}>
+            {emptyLibrary ? 'Nothing here yet' : 'No matches'}
+          </Text>
           <Text style={styles.emptyBody}>
-            Documents you open appear in this list so you can jump back to the last page you read.
+            {emptyLibrary
+              ? 'Documents you open appear in this list so you can jump back to the last page you read.'
+              : `No documents match “${query.trim()}”.`}
           </Text>
         </View>
       ) : (
         <View style={styles.list}>
-          {documents.map((doc) => (
+          {filtered.map((doc) => (
             <View key={doc.id} style={[styles.row, doc.pinned && styles.rowPinned]}>
               <Pressable
                 accessibilityRole="button"
@@ -178,12 +205,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   primaryButtonText: {
     color: '#0F1419',
     fontSize: 16,
     fontWeight: '700',
+  },
+  search: {
+    borderWidth: 1,
+    borderColor: '#1E2630',
+    backgroundColor: '#141A22',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: '#F4F1EA',
+    fontSize: 15,
+    marginBottom: 16,
   },
   pressed: {
     opacity: 0.85,
