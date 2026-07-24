@@ -154,6 +154,23 @@ export default function ReaderScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
   }, [bookmarks, page, params.id]);
 
+  const clearAllBookmarks = useCallback(() => {
+    if (!bookmarks.length) return;
+    Alert.alert('Clear all bookmarks?', 'This removes every bookmark for this document.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: async () => {
+          setBookmarks([]);
+          if (params.id) {
+            await updateDocument(params.id, { bookmarks: [] });
+          }
+        },
+      },
+    ]);
+  }, [bookmarks.length, params.id]);
+
   const onThemeChange = useCallback((next: ReadingThemeId) => {
     setThemeId(next);
     loadSettings().then((current) => saveSettings({ ...current, theme: next })).catch(() => undefined);
@@ -274,6 +291,7 @@ export default function ReaderScreen() {
             bookmarks={bookmarks}
             onToggle={toggleBookmark}
             onJump={goPage}
+            onClearAll={clearAllBookmarks}
           />
           <PageScrubber theme={theme} page={page} pageCount={pageCount} onSelect={goPage} />
           <ThemeControls

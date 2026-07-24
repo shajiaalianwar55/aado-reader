@@ -7,9 +7,10 @@ type Props = {
   bookmarks: number[];
   onToggle: () => void;
   onJump: (page: number) => void;
+  onClearAll?: () => void;
 };
 
-export function BookmarkBar({ theme, page, bookmarks, onToggle, onJump }: Props) {
+export function BookmarkBar({ theme, page, bookmarks, onToggle, onJump, onClearAll }: Props) {
   const bookmarked = bookmarks.includes(page);
 
   return (
@@ -24,6 +25,15 @@ export function BookmarkBar({ theme, page, bookmarks, onToggle, onJump }: Props)
             {bookmarked ? 'Bookmarked' : 'Bookmark page'}
           </Text>
         </Pressable>
+        {onClearAll && bookmarks.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear all bookmarks"
+            onPress={onClearAll}
+            style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.chipText, { color: theme.textMuted }]}>Clear all</Text>
+          </Pressable>
+        ) : null}
         <Text style={[styles.meta, { color: theme.textMuted }]}>
           {bookmarks.length} saved
         </Text>
