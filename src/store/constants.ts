@@ -27,10 +27,15 @@ export function sortLibrary(docs: LibraryDocument[]): LibraryDocument[] {
   });
 }
 
-export function sortLibraryByMode(
-  docs: LibraryDocument[],
-  mode: import('@/src/types').LibrarySortMode,
-): LibraryDocument[] {
+export function sortLibraryByMode<
+  T extends {
+    name: string;
+    lastOpened: number;
+    lastPage: number;
+    pageCount: number;
+    pinned?: boolean;
+  },
+>(docs: T[], mode: import('@/src/types').LibrarySortMode): T[] {
   return [...docs].sort((a, b) => {
     const pinDiff = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
     if (pinDiff !== 0) return pinDiff;
