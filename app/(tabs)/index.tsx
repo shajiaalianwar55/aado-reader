@@ -143,12 +143,26 @@ export default function LibraryScreen() {
           {
             text: 'Restart',
             onPress: async () => {
-              await updateDocument(id, { lastPage: 1 });
+              await updateDocument(id, { lastPage: 1, finished: false });
               await refresh();
             },
           },
         ],
       );
+    },
+    [documents, refresh],
+  );
+
+  const onToggleFinished = useCallback(
+    async (id: string) => {
+      const doc = documents.find((d) => d.id === id);
+      if (!doc) return;
+      const finished = !doc.finished;
+      await updateDocument(id, {
+        finished,
+        ...(finished && doc.pageCount > 0 ? { lastPage: doc.pageCount } : {}),
+      });
+      await refresh();
     },
     [documents, refresh],
   );
@@ -163,6 +177,7 @@ export default function LibraryScreen() {
         onRenameDocument={setRenameId}
         onTogglePin={onTogglePin}
         onRestartDocument={onRestartDocument}
+        onToggleFinished={onToggleFinished}
       />
       <RenameDocumentModal
         visible={Boolean(renaming)}

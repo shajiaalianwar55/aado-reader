@@ -20,6 +20,7 @@ type LibraryScreenProps = {
     lastPage: number;
     pageCount: number;
     pinned?: boolean;
+    finished?: boolean;
   }>;
   onOpenDocument?: () => void;
   onSelectDocument?: (id: string) => void;
@@ -27,6 +28,7 @@ type LibraryScreenProps = {
   onRenameDocument?: (id: string) => void;
   onTogglePin?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
+  onToggleFinished?: (id: string) => void;
 };
 
 const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
@@ -54,6 +56,7 @@ export function LibraryView({
   onRenameDocument,
   onTogglePin,
   onRestartDocument,
+  onToggleFinished,
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
@@ -74,7 +77,12 @@ export function LibraryView({
   const continueDoc = useMemo(() => {
     if (emptyLibrary || query.trim()) return null;
     const unfinished = documents
-      .filter((d) => d.lastPage > 1 && (d.pageCount === 0 || d.lastPage < d.pageCount))
+      .filter(
+        (d) =>
+          !d.finished &&
+          d.lastPage > 1 &&
+          (d.pageCount === 0 || d.lastPage < d.pageCount),
+      )
       .sort((a, b) => b.lastOpened - a.lastOpened);
     return unfinished[0] ?? null;
   }, [documents, emptyLibrary, query]);
@@ -185,7 +193,9 @@ export function LibraryView({
                 onPress={() => onSelectDocument?.(doc.id)}
                 style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]}>
                 <View style={styles.thumb}>
-                  <Text style={styles.thumbLabel}>{doc.pinned ? 'PIN' : 'PDF'}</Text>
+                  <Text style={styles.thumbLabel}>
+                    {doc.finished ? 'DONE' : doc.pinned ? 'PIN' : 'PDF'}
+                  </Text>
                 </View>
                 <View style={styles.rowBody}>
                   <Text style={styles.docName} numberOfLines={2}>
@@ -194,9 +204,9 @@ export function LibraryView({
                   <Text style={styles.docMeta}>
                     {(() => {
                       const progress = formatReadingProgress(doc.lastPage, doc.pageCount);
-                      return `Page ${doc.lastPage}${doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''}${
-                        progress ? ` · ${progress}` : ''
-                      } · ${formatRelative(doc.lastOpened)}`;
+                      return `${doc.finished ? 'Finished · ' : ''}Page ${doc.lastPage}${
+                        doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''
+                      }${progress ? ` · ${progress}` : ''} · ${formatRelative(doc.lastOpened)}`;
                     })()}
                   </Text>
                 </View>
@@ -211,6 +221,20 @@ export function LibraryView({
                     style={[styles.actionBtn, doc.pinned && styles.pinActive]}>
                     <Text style={[styles.actionText, doc.pinned && styles.pinActiveText]}>
                       {doc.pinned ? 'Unpin' : 'Pin'}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {onToggleFinished ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      doc.finished ? `Mark ${doc.name} as unfinished` : `Mark ${doc.name} as finished`
+                    }
+                    hitSlop={8}
+                    onPress={() => onToggleFinished(doc.id)}
+                    style={[styles.actionBtn, doc.finished && styles.pinActive]}>
+                    <Text style={[styles.actionText, doc.finished && styles.pinActiveText]}>
+                      {doc.finished ? 'Unfinish' : 'Done'}
                     </Text>
                   </Pressable>
                 ) : null}

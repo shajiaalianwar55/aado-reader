@@ -11,6 +11,7 @@ export type LibraryDocument = {
   pageCount: number;
   bookmarks: number[];
   pinned?: boolean;
+  finished?: boolean;
 };
 
 export type LibrarySortMode = 'recent' | 'name' | 'progress';

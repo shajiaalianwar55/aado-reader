@@ -214,12 +214,27 @@ export default function ReaderScreen() {
         onPress: async () => {
           goPage(1);
           if (params.id) {
-            await updateDocument(params.id, { lastPage: 1 });
+            await updateDocument(params.id, { lastPage: 1, finished: false });
           }
+          setDoc((current) => (current ? { ...current, finished: false, lastPage: 1 } : current));
         },
       },
     ]);
   }, [goPage, params.id]);
+
+  const onToggleFinished = useCallback(async () => {
+    if (!params.id) return;
+    const finished = !doc?.finished;
+    const patch = {
+      finished,
+      ...(finished && pageCount > 0 ? { lastPage: pageCount } : {}),
+    };
+    await updateDocument(params.id, patch);
+    setDoc((current) => (current ? { ...current, ...patch } : current));
+    if (finished && pageCount > 0) {
+      goPage(pageCount);
+    }
+  }, [doc?.finished, goPage, pageCount, params.id]);
 
   if (!uri || !restored) {
     return (
@@ -248,6 +263,16 @@ export default function ReaderScreen() {
       bottomInset={insets.bottom}
       topExtra={
         <View style={styles.topActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={doc?.finished ? 'Mark as unfinished' : 'Mark as finished'}
+            onPress={onToggleFinished}
+            hitSlop={8}
+            style={styles.shareBtn}>
+            <Text style={[styles.shareText, { color: theme.accent }]}>
+              {doc?.finished ? 'Unfinish' : 'Done'}
+            </Text>
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Restart from page 1"
