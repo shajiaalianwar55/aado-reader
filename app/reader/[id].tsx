@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
 import { ChromeTapHint } from '@/src/components/ChromeTapHint';
@@ -236,6 +237,17 @@ export default function ReaderScreen() {
     }
   }, [doc?.finished, goPage, pageCount, params.id]);
 
+  const onCopyPage = useCallback(async () => {
+    const text =
+      pageCount > 0 ? `Page ${page} of ${pageCount} — ${title}` : `Page ${page} — ${title}`;
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Copied', text);
+    } catch (error) {
+      Alert.alert('Could not copy', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [page, pageCount, title]);
+
   if (!uri || !restored) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
@@ -280,6 +292,14 @@ export default function ReaderScreen() {
             hitSlop={8}
             style={styles.shareBtn}>
             <Text style={[styles.shareText, { color: theme.accent }]}>Restart</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Copy current page number"
+            onPress={onCopyPage}
+            hitSlop={8}
+            style={styles.shareBtn}>
+            <Text style={[styles.shareText, { color: theme.accent }]}>Copy</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
