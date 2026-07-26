@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -177,6 +177,17 @@ export default function ReaderScreen() {
     ]);
   }, [bookmarks.length, params.id]);
 
+  const onShareBookmarks = useCallback(async () => {
+    if (!bookmarks.length) return;
+    const lines = bookmarks.map((b) => `• Page ${b}`).join('\n');
+    const message = `Bookmarks for ${title}\n\n${lines}`;
+    try {
+      await Share.share({ message, title: `${title} bookmarks` });
+    } catch (error) {
+      Alert.alert('Could not share', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [bookmarks, title]);
+
   const onThemeChange = useCallback((next: ReadingThemeId) => {
     setThemeId(next);
     loadSettings().then((current) => saveSettings({ ...current, theme: next })).catch(() => undefined);
@@ -342,6 +353,7 @@ export default function ReaderScreen() {
             onToggle={toggleBookmark}
             onJump={goPage}
             onClearAll={clearAllBookmarks}
+            onShareBookmarks={onShareBookmarks}
           />
           <PageScrubber theme={theme} page={page} pageCount={pageCount} onSelect={goPage} />
           <ThemeControls
