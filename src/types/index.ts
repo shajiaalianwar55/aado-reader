@@ -36,3 +36,15 @@ export type ReaderSettings = {
   haptics: boolean;
   autoHideMs: number;
 };
+
+export type DailyReadingActivity = {
+  date: string;
+  seconds: number;
+  pages: number;
+  documentIds: string[];
+};
+
+export type ReadingStats = {
+  dailyGoalMinutes: number;
+  days: DailyReadingActivity[];
+};

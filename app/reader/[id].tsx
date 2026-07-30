@@ -18,6 +18,7 @@ import { ThemeControls } from '@/src/components/ThemeControls';
 import { useAutoHideChrome } from '@/src/hooks/useAutoHideChrome';
 import { useReadingProgress } from '@/src/hooks/useReadingProgress';
 import { useReadingSession } from '@/src/hooks/useReadingSession';
+import { useReadingActivity } from '@/src/hooks/useReadingActivity';
 import { lightImpactHaptic, selectionHaptic } from '@/src/lib/haptics';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
@@ -53,6 +54,7 @@ export default function ReaderScreen() {
   const uri = params.uri ?? doc?.uri;
 
   useReadingSession(Boolean(uri) && keepAwake);
+  useReadingActivity(params.id, page, Boolean(uri));
   useReadingProgress(params.id, page);
   const { bump: bumpChrome } = useAutoHideChrome(chromeVisible, setChromeVisible, autoHideMs);
 
