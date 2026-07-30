@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
+import { AnnotationPanel } from '@/src/components/AnnotationPanel';
 import { ChromeTapHint } from '@/src/components/ChromeTapHint';
 import { PageScrubber } from '@/src/components/PageScrubber';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
@@ -19,7 +20,7 @@ import { useReadingSession } from '@/src/hooks/useReadingSession';
 import { lightImpactHaptic, selectionHaptic } from '@/src/lib/haptics';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
-import type { FitMode, LibraryDocument, ReadingThemeId, ScrollMode } from '@/src/types';
+import type { AnnotationColor, FitMode, LibraryDocument, PageAnnotation, ReadingThemeId, ScrollMode } from '@/src/types';
 
 export default function ReaderScreen() {
   const router = useRouter();
@@ -39,6 +40,8 @@ export default function ReaderScreen() {
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [autoHideMs, setAutoHideMs] = useState(4000);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [annotations, setAnnotations] = useState<PageAnnotation[]>([]);
+  const [annotationsVisible, setAnnotationsVisible] = useState(false);
   const [matchCount, setMatchCount] = useState(0);
   const [matchIndex, setMatchIndex] = useState(-1);
   const [restored, setRestored] = useState(false);
@@ -72,6 +75,7 @@ export default function ReaderScreen() {
         setPage(Number.isFinite(forced) && forced > 0 ? forced : existing.lastPage || 1);
         setPageCount(existing.pageCount || 0);
         setBookmarks(existing.bookmarks ?? []);
+        setAnnotations(existing.annotations ?? []);
         setRestored(true);
         return;
       }
@@ -84,6 +88,7 @@ export default function ReaderScreen() {
           lastPage: 1,
           pageCount: 0,
           bookmarks: [],
+          annotations: [],
           pinned: false,
         };
         await upsertDocument(created);
@@ -188,6 +193,31 @@ export default function ReaderScreen() {
     }
   }, [bookmarks, title]);
 
+  const saveAnnotation = useCallback(async (note: string, color: AnnotationColor) => {
+    const now = Date.now();
+    const current = annotations.find((item) => item.page === page);
+    const next = [
+      ...annotations.filter((item) => item.page !== page),
+      {
+        id: current?.id ?? `${params.id}:${page}:${now}`,
+        page,
+        note,
+        color,
+        createdAt: current?.createdAt ?? now,
+        updatedAt: now,
+      },
+    ].sort((a, b) => a.page - b.page);
+    setAnnotations(next);
+    await updateDocument(params.id, { annotations: next });
+    setAnnotationsVisible(false);
+  }, [annotations, page, params.id]);
+
+  const deleteAnnotation = useCallback(async (id: string) => {
+    const next = annotations.filter((item) => item.id !== id);
+    setAnnotations(next);
+    await updateDocument(params.id, { annotations: next });
+  }, [annotations, params.id]);
+
   const onThemeChange = useCallback((next: ReadingThemeId) => {
     setThemeId(next);
     loadSettings().then((current) => saveSettings({ ...current, theme: next })).catch(() => undefined);
@@ -286,6 +316,14 @@ export default function ReaderScreen() {
       bottomInset={insets.bottom}
       topExtra={
         <View style={styles.topActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open notes and highlights"
+            onPress={() => setAnnotationsVisible(true)}
+            hitSlop={8}
+            style={styles.shareBtn}>
+            <Text style={[styles.shareText, { color: theme.accent }]}>Notes ({annotations.length})</Text>
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={doc?.finished ? 'Mark as unfinished' : 'Mark as finished'}
@@ -399,6 +437,19 @@ export default function ReaderScreen() {
         </View>
       ) : null}
       <ChromeTapHint visible={!chromeVisible} theme={theme} bottomInset={insets.bottom} />
+      <AnnotationPanel
+        visible={annotationsVisible}
+        page={page}
+        annotations={annotations}
+        theme={theme}
+        onClose={() => setAnnotationsVisible(false)}
+        onSave={saveAnnotation}
+        onDelete={deleteAnnotation}
+        onJump={(target) => {
+          setAnnotationsVisible(false);
+          goPage(target);
+        }}
+      />
     </ReaderChrome>
     </>
   );
