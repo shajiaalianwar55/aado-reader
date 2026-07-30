@@ -192,6 +192,15 @@ export function buildPdfViewerHtml(): string {
       post('search', { count: searchMatches.length, index: searchIndex });
     }
 
+    async function sendPageText(pageNumber) {
+      if (!pdfDoc) return;
+      const safePage = Math.min(Math.max(pageNumber || currentPage, 1), pdfDoc.numPages);
+      const page = await pdfDoc.getPage(safePage);
+      const content = await page.getTextContent();
+      const text = content.items.map((item) => item.str).join(' ').replace(/\\s+/g, ' ').trim();
+      post('pageText', { page: safePage, text });
+    }
+
     function handleMessage(data) {
       let msg = data;
       if (typeof data === 'string') {
@@ -238,6 +247,9 @@ export function buildPdfViewerHtml(): string {
           break;
         case 'searchPrev':
           findNext(-1);
+          break;
+        case 'getPageText':
+          sendPageText(msg.page);
           break;
         default:
           break;
