@@ -12,6 +12,7 @@ import { PageScrubber } from '@/src/components/PageScrubber';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
 import { ReaderChrome } from '@/src/components/ReaderChrome';
 import { ReaderControls } from '@/src/components/ReaderControls';
+import { ReadAloudControls } from '@/src/components/ReadAloudControls';
 import { SearchBar } from '@/src/components/SearchBar';
 import { ThemeControls } from '@/src/components/ThemeControls';
 import { useAutoHideChrome } from '@/src/hooks/useAutoHideChrome';
@@ -45,6 +46,7 @@ export default function ReaderScreen() {
   const [matchCount, setMatchCount] = useState(0);
   const [matchIndex, setMatchIndex] = useState(-1);
   const [restored, setRestored] = useState(false);
+  const [pageText, setPageText] = useState('');
 
   const theme = readingThemes[themeId];
   const title = useMemo(() => params.name ?? doc?.name ?? 'Document', [params.name, doc?.name]);
@@ -114,6 +116,7 @@ export default function ReaderScreen() {
   );
 
   const onPageChange = useCallback((next: number) => {
+    setPageText('');
     setPage((prev) => {
       if (prev !== next) {
         selectionHaptic(hapticsEnabled);
@@ -384,6 +387,14 @@ export default function ReaderScreen() {
             onNext={() => viewerRef.current?.searchNext()}
             onPrev={() => viewerRef.current?.searchPrev()}
           />
+          <ReadAloudControls
+            theme={theme}
+            page={page}
+            pageCount={pageCount}
+            text={pageText}
+            onRequestText={() => viewerRef.current?.requestPageText(page)}
+            onNextPage={() => goPage(page + 1)}
+          />
           <BookmarkBar
             theme={theme}
             page={page}
@@ -416,6 +427,9 @@ export default function ReaderScreen() {
           onSearchResult={(count, index) => {
             setMatchCount(count);
             setMatchIndex(index);
+          }}
+          onPageText={(textPage, text) => {
+            if (textPage === page) setPageText(text);
           }}
           onError={setError}
         />
