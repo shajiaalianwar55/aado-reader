@@ -14,6 +14,10 @@ export type LibraryDocument = {
   finished?: boolean;
 };
 
+export type TrashedDocument = LibraryDocument & {
+  deletedAt: number;
+};
+
 export type LibrarySortMode = 'recent' | 'name' | 'progress';
 
 export type ReaderSettings = {

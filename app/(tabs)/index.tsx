@@ -3,19 +3,26 @@ import { Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
+import { TrashModal } from '@/src/components/TrashModal';
 import { pickPdfDocuments } from '@/src/lib/pickPdf';
-import { loadLibrary, removeDocument, updateDocument, upsertDocument } from '@/src/store/libraryStore';
-import type { LibraryDocument } from '@/src/types';
+import {
+  emptyTrash, loadLibrary, loadTrash, permanentlyDeleteDocument,
+  restoreDocument, trashDocument, updateDocument, upsertDocument,
+} from '@/src/store/libraryStore';
+import type { LibraryDocument, TrashedDocument } from '@/src/types';
 
 export default function LibraryScreen() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
   const [renameId, setRenameId] = useState<string | null>(null);
+  const [trash, setTrash] = useState<TrashedDocument[]>([]);
+  const [trashVisible, setTrashVisible] = useState(false);
 
   const refresh = useCallback(async () => {
-    const docs = await loadLibrary();
+    const [docs, removed] = await Promise.all([loadLibrary(), loadTrash()]);
     setDocuments(docs);
+    setTrash(removed);
   }, []);
 
   useFocusEffect(
@@ -110,8 +117,9 @@ export default function LibraryScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
-            const next = await removeDocument(id);
+            const next = await trashDocument(id);
             setDocuments(next);
+            setTrash(await loadTrash());
           },
         },
       ],
@@ -188,12 +196,31 @@ export default function LibraryScreen() {
         onTogglePin={onTogglePin}
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}
+        trashCount={trash.length}
+        onOpenTrash={() => setTrashVisible(true)}
       />
       <RenameDocumentModal
         visible={Boolean(renaming)}
         initialName={renaming?.name ?? ''}
         onCancel={() => setRenameId(null)}
         onSave={onSaveRename}
+      />
+      <TrashModal
+        visible={trashVisible}
+        documents={trash}
+        onClose={() => setTrashVisible(false)}
+        onRestore={async (id) => {
+          await restoreDocument(id);
+          await refresh();
+        }}
+        onDelete={async (id) => {
+          await permanentlyDeleteDocument(id);
+          await refresh();
+        }}
+        onEmpty={async () => {
+          await emptyTrash();
+          await refresh();
+        }}
       />
     </>
   );

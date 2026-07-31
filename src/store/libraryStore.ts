@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { LibraryDocument, ReaderSettings } from '@/src/types';
+import type { LibraryDocument, ReaderSettings, TrashedDocument } from '@/src/types';
 import {
   STORAGE_KEYS,
   defaultSettings,
@@ -52,6 +52,53 @@ export async function removeDocument(id: string): Promise<LibraryDocument[]> {
   const next = docs.filter((d) => d.id !== id);
   await saveLibrary(next);
   return next;
+}
+
+export async function loadTrash(): Promise<TrashedDocument[]> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.trash);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as TrashedDocument[];
+    return Array.isArray(parsed) ? parsed.sort((a, b) => b.deletedAt - a.deletedAt) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function saveTrash(documents: TrashedDocument[]): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.trash, JSON.stringify(documents));
+}
+
+export async function trashDocument(id: string): Promise<LibraryDocument[]> {
+  const docs = await loadLibrary();
+  const document = docs.find((item) => item.id === id);
+  if (!document) return docs;
+  const trash = await loadTrash();
+  await saveTrash([
+    { ...document, deletedAt: Date.now() },
+    ...trash.filter((item) => item.id !== id),
+  ]);
+  const next = docs.filter((item) => item.id !== id);
+  await saveLibrary(next);
+  return next;
+}
+
+export async function restoreDocument(id: string): Promise<void> {
+  const trash = await loadTrash();
+  const document = trash.find((item) => item.id === id);
+  if (!document) return;
+  const { deletedAt: _deletedAt, ...restored } = document;
+  await upsertDocument({ ...restored, lastOpened: Date.now() });
+  await saveTrash(trash.filter((item) => item.id !== id));
+}
+
+export async function permanentlyDeleteDocument(id: string): Promise<void> {
+  const trash = await loadTrash();
+  await saveTrash(trash.filter((item) => item.id !== id));
+}
+
+export async function emptyTrash(): Promise<void> {
+  await saveTrash([]);
 }
 
 export async function clearLibrary(): Promise<void> {

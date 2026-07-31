@@ -4,6 +4,7 @@ import { defaultReadingTheme } from '@/src/theme/readingThemes';
 export const STORAGE_KEYS = {
   library: '@aado/library',
   settings: '@aado/settings',
+  trash: '@aado/trash',
 } as const;
 
 export const defaultSettings: ReaderSettings = {

@@ -29,6 +29,8 @@ type LibraryScreenProps = {
   onTogglePin?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
   onToggleFinished?: (id: string) => void;
+  trashCount?: number;
+  onOpenTrash?: () => void;
 };
 
 const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
@@ -57,6 +59,8 @@ export function LibraryView({
   onTogglePin,
   onRestartDocument,
   onToggleFinished,
+  trashCount = 0,
+  onOpenTrash,
 }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
@@ -109,6 +113,15 @@ export function LibraryView({
         style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
         <Text style={styles.primaryButtonText}>Add PDFs</Text>
       </Pressable>
+      {onOpenTrash ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open recently deleted, ${trashCount} documents`}
+          onPress={onOpenTrash}
+          style={styles.trashButton}>
+          <Text style={styles.trashButtonText}>Recently deleted ({trashCount})</Text>
+        </Pressable>
+      ) : null}
 
       {continueDoc ? (
         <Pressable
@@ -318,6 +331,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  trashButton: { alignSelf: 'flex-start', paddingVertical: 8, marginTop: -10, marginBottom: 14 },
+  trashButtonText: { color: '#9CA3AF', fontSize: 13, fontWeight: '600' },
   continueCard: {
     borderWidth: 1,
     borderColor: '#C4A574',
