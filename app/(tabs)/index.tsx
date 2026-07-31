@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
-import { pickPdfDocument } from '@/src/lib/pickPdf';
+import { pickPdfDocuments } from '@/src/lib/pickPdf';
 import { loadLibrary, removeDocument, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import type { LibraryDocument } from '@/src/types';
 
@@ -32,20 +32,30 @@ export default function LibraryScreen() {
     if (busy) return;
     setBusy(true);
     try {
-      const doc = await pickPdfDocument();
-      if (!doc) return;
-      const existing = documents.find((d) => d.id === doc.id);
-      const merged = existing
-        ? { ...existing, uri: doc.uri, lastOpened: Date.now() }
-        : doc;
-      const next = await upsertDocument(merged);
+      const picked = await pickPdfDocuments();
+      if (!picked.length) return;
+      let next = documents;
+      const imported: LibraryDocument[] = [];
+      for (const doc of picked) {
+        const existing = next.find((item) => item.id === doc.id);
+        const merged = existing
+          ? { ...existing, uri: doc.uri, lastOpened: Date.now() }
+          : doc;
+        next = await upsertDocument(merged);
+        imported.push(merged);
+      }
       setDocuments(next);
-      router.push({
-        pathname: '/reader/[id]',
-        params: { id: merged.id, uri: merged.uri, name: merged.name },
-      });
+      if (imported.length === 1) {
+        const [document] = imported;
+        router.push({
+          pathname: '/reader/[id]',
+          params: { id: document.id, uri: document.uri, name: document.name },
+        });
+      } else {
+        Alert.alert('PDFs added', `${imported.length} documents were added to your library.`);
+      }
     } catch (error) {
-      Alert.alert('Could not open PDF', error instanceof Error ? error.message : 'Unknown error');
+      Alert.alert('Could not add PDFs', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setBusy(false);
     }

@@ -104,10 +104,10 @@ export function LibraryView({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Open a PDF"
+        accessibilityLabel="Add one or more PDFs"
         onPress={onOpenDocument}
         style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
-        <Text style={styles.primaryButtonText}>Open PDF</Text>
+        <Text style={styles.primaryButtonText}>Add PDFs</Text>
       </Pressable>
 
       {continueDoc ? (
