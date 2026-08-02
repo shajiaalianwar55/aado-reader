@@ -12,6 +12,8 @@ Aado focuses on **reading comfort** first:
 - Day, sepia, and night themes with brightness control
 - Immersive chrome that hides while you read
 - In-document search, bookmarks, and last-page restore
+- Page-specific reading notes with quick navigation
+- Local reading-time, completion, and note insights
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open
 

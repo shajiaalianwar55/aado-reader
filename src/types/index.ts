@@ -10,6 +10,8 @@ export type LibraryDocument = {
   lastPage: number;
   pageCount: number;
   bookmarks: number[];
+  notes?: Record<string, string>;
+  readingSeconds?: number;
   pinned?: boolean;
   finished?: boolean;
 };

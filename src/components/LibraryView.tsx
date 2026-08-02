@@ -21,6 +21,8 @@ type LibraryScreenProps = {
     pageCount: number;
     pinned?: boolean;
     finished?: boolean;
+    notes?: Record<string, string>;
+    readingSeconds?: number;
   }>;
   onOpenDocument?: () => void;
   onSelectDocument?: (id: string) => void;
@@ -67,6 +69,11 @@ export function LibraryView({
   const [sortMode, setSortMode] = useState<LibrarySortMode>('recent');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const emptyLibrary = documents.length === 0;
+  const insights = useMemo(() => ({
+    minutes: Math.floor(documents.reduce((sum, doc) => sum + (doc.readingSeconds ?? 0), 0) / 60),
+    finished: documents.filter((doc) => doc.finished).length,
+    notes: documents.reduce((sum, doc) => sum + Object.keys(doc.notes ?? {}).length, 0),
+  }), [documents]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -141,6 +148,17 @@ export function LibraryView({
               : ''}
           </Text>
         </Pressable>
+      ) : null}
+
+      {!emptyLibrary ? (
+        <View style={styles.insightsCard} accessibilityLabel={`${insights.minutes} minutes read, ${insights.finished} completed, ${insights.notes} notes`}>
+          <Text style={styles.insightsTitle}>Reading insights</Text>
+          <View style={styles.insightsRow}>
+            <View style={styles.insight}><Text style={styles.insightValue}>{insights.minutes}</Text><Text style={styles.insightLabel}>minutes</Text></View>
+            <View style={styles.insight}><Text style={styles.insightValue}>{insights.finished}</Text><Text style={styles.insightLabel}>completed</Text></View>
+            <View style={styles.insight}><Text style={styles.insightValue}>{insights.notes}</Text><Text style={styles.insightLabel}>notes</Text></View>
+          </View>
+        </View>
       ) : null}
 
       {!emptyLibrary ? (
@@ -349,6 +367,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
+  insightsCard: { backgroundColor: '#141A22', borderWidth: 1, borderColor: '#1E2630', borderRadius: 12, padding: 14, marginBottom: 16 },
+  insightsTitle: { color: '#9CA3AF', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 10 },
+  insightsRow: { flexDirection: 'row' }, insight: { flex: 1 }, insightValue: { color: '#F4F1EA', fontSize: 22, fontWeight: '700' }, insightLabel: { color: '#9CA3AF', fontSize: 12, marginTop: 2 },
   continueTitle: {
     color: '#F4F1EA',
     fontSize: 17,

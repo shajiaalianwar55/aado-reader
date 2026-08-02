@@ -8,6 +8,7 @@ import * as Sharing from 'expo-sharing';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
 import { ChromeTapHint } from '@/src/components/ChromeTapHint';
 import { PageScrubber } from '@/src/components/PageScrubber';
+import { PageNotes } from '@/src/components/PageNotes';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
 import { ReaderChrome } from '@/src/components/ReaderChrome';
 import { ReaderControls } from '@/src/components/ReaderControls';
@@ -16,6 +17,7 @@ import { ThemeControls } from '@/src/components/ThemeControls';
 import { useAutoHideChrome } from '@/src/hooks/useAutoHideChrome';
 import { useReadingProgress } from '@/src/hooks/useReadingProgress';
 import { useReadingSession } from '@/src/hooks/useReadingSession';
+import { useReadingTime } from '@/src/hooks/useReadingTime';
 import { lightImpactHaptic, selectionHaptic } from '@/src/lib/haptics';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
@@ -39,6 +41,7 @@ export default function ReaderScreen() {
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [autoHideMs, setAutoHideMs] = useState(4000);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [matchCount, setMatchCount] = useState(0);
   const [matchIndex, setMatchIndex] = useState(-1);
   const [restored, setRestored] = useState(false);
@@ -48,6 +51,7 @@ export default function ReaderScreen() {
   const uri = params.uri ?? doc?.uri;
 
   useReadingSession(Boolean(uri) && keepAwake);
+  useReadingTime(params.id, Boolean(uri) && restored);
   useReadingProgress(params.id, page);
   const { bump: bumpChrome } = useAutoHideChrome(chromeVisible, setChromeVisible, autoHideMs);
 
@@ -72,6 +76,7 @@ export default function ReaderScreen() {
         setPage(Number.isFinite(forced) && forced > 0 ? forced : existing.lastPage || 1);
         setPageCount(existing.pageCount || 0);
         setBookmarks(existing.bookmarks ?? []);
+        setNotes(existing.notes ?? {});
         setRestored(true);
         return;
       }
@@ -354,6 +359,19 @@ export default function ReaderScreen() {
             onJump={goPage}
             onClearAll={clearAllBookmarks}
             onShareBookmarks={onShareBookmarks}
+          />
+          <PageNotes
+            theme={theme}
+            page={page}
+            notes={notes}
+            onJump={goPage}
+            onSave={async (notePage, text) => {
+              const next = { ...notes };
+              if (text) next[String(notePage)] = text;
+              else delete next[String(notePage)];
+              setNotes(next);
+              await updateDocument(params.id, { notes: next });
+            }}
           />
           <PageScrubber theme={theme} page={page} pageCount={pageCount} onSelect={goPage} />
           <ThemeControls
