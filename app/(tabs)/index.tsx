@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Share } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
@@ -185,6 +185,31 @@ export default function LibraryScreen() {
     [documents, refresh],
   );
 
+  const onShareInsights = useCallback(async () => {
+    const totalMinutes = Math.floor(
+      documents.reduce((sum, document) => sum + (document.readingSeconds ?? 0), 0) / 60,
+    );
+    const finishedCount = documents.filter((document) => document.finished).length;
+    const noteCount = documents.reduce(
+      (sum, document) => sum + Object.keys(document.notes ?? {}).length,
+      0,
+    );
+    const message = [
+      'My Aado reading insights',
+      '',
+      `${documents.length} document${documents.length === 1 ? '' : 's'} in my library`,
+      `${totalMinutes} minute${totalMinutes === 1 ? '' : 's'} read`,
+      `${finishedCount} completed`,
+      `${noteCount} note${noteCount === 1 ? '' : 's'} saved`,
+    ].join('\n');
+
+    try {
+      await Share.share({ title: 'Aado reading insights', message });
+    } catch (error) {
+      Alert.alert('Could not share insights', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [documents]);
+
   return (
     <>
       <LibraryView
@@ -196,6 +221,7 @@ export default function LibraryScreen() {
         onTogglePin={onTogglePin}
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}
+        onShareInsights={onShareInsights}
         trashCount={trash.length}
         onOpenTrash={() => setTrashVisible(true)}
       />

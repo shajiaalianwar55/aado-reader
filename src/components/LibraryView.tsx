@@ -31,6 +31,7 @@ type LibraryScreenProps = {
   onTogglePin?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
   onToggleFinished?: (id: string) => void;
+  onShareInsights?: () => void;
   trashCount?: number;
   onOpenTrash?: () => void;
 };
@@ -61,6 +62,14 @@ function formatRelative(ts: number): string {
   return `${days}d ago`;
 }
 
+function formatReadingTime(seconds: number): string {
+  const minutes = Math.max(1, Math.floor(seconds / 60));
+  if (minutes < 60) return `${minutes}m read`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes ? `${hours}h ${remainingMinutes}m read` : `${hours}h read`;
+}
+
 export function LibraryView({
   documents = [],
   onOpenDocument,
@@ -70,6 +79,7 @@ export function LibraryView({
   onTogglePin,
   onRestartDocument,
   onToggleFinished,
+  onShareInsights,
   trashCount = 0,
   onOpenTrash,
 }: LibraryScreenProps) {
@@ -78,6 +88,7 @@ export function LibraryView({
   const [sortMode, setSortMode] = useState<LibrarySortMode>('recent');
   const [statusFilter, setStatusFilter] = useState<ReadingStatusFilter>('all');
   const [pinnedOnly, setPinnedOnly] = useState(false);
+  const [notesOnly, setNotesOnly] = useState(false);
   const emptyLibrary = documents.length === 0;
   const insights = useMemo(() => ({
     minutes: Math.floor(documents.reduce((sum, doc) => sum + (doc.readingSeconds ?? 0), 0) / 60),
@@ -89,6 +100,7 @@ export function LibraryView({
     const needle = query.trim().toLowerCase();
     let base = documents;
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
+    if (notesOnly) base = base.filter((doc) => Object.keys(doc.notes ?? {}).length > 0);
     if (statusFilter === 'unread') {
       base = base.filter((doc) => !doc.finished && doc.lastPage <= 1);
     } else if (statusFilter === 'reading') {
@@ -104,7 +116,7 @@ export function LibraryView({
       );
     }
     return sortLibraryByMode(base, sortMode);
-  }, [documents, query, sortMode, pinnedOnly, statusFilter]);
+  }, [documents, query, sortMode, pinnedOnly, notesOnly, statusFilter]);
 
   const empty = emptyLibrary || filtered.length === 0;
 
@@ -175,7 +187,18 @@ export function LibraryView({
 
       {!emptyLibrary ? (
         <View style={styles.insightsCard} accessibilityLabel={`${insights.minutes} minutes read, ${insights.finished} completed, ${insights.notes} notes`}>
-          <Text style={styles.insightsTitle}>Reading insights</Text>
+          <View style={styles.insightsHeader}>
+            <Text style={styles.insightsTitle}>Reading insights</Text>
+            {onShareInsights ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Share reading insights"
+                onPress={onShareInsights}
+                style={styles.insightsShareButton}>
+                <Text style={styles.insightsShareText}>Share</Text>
+              </Pressable>
+            ) : null}
+          </View>
           <View style={styles.insightsRow}>
             <View style={styles.insight}><Text style={styles.insightValue}>{insights.minutes}</Text><Text style={styles.insightLabel}>minutes</Text></View>
             <View style={styles.insight}><Text style={styles.insightValue}>{insights.finished}</Text><Text style={styles.insightLabel}>completed</Text></View>
@@ -220,6 +243,16 @@ export function LibraryView({
                 Pinned
               </Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={notesOnly ? 'Include documents without notes' : 'Show documents with notes only'}
+              accessibilityState={{ selected: notesOnly }}
+              onPress={() => setNotesOnly((value) => !value)}
+              style={[styles.sortChip, notesOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, notesOnly && styles.sortChipTextActive]}>
+                Has notes
+              </Text>
+            </Pressable>
           </View>
           <Text style={styles.filterLabel}>Reading status</Text>
           <View style={styles.sortRow}>
@@ -253,11 +286,9 @@ export function LibraryView({
               ? 'Documents you open appear in this list so you can jump back to the last page you read.'
               : query.trim()
                 ? `No documents match “${query.trim()}”.`
-                : pinnedOnly && statusFilter === 'all'
-                  ? 'No pinned documents yet. Pin a PDF to keep it here.'
-                  : pinnedOnly
-                    ? `No pinned ${statusFilter} documents yet.`
-                    : `No ${statusFilter} documents yet.`}
+                : pinnedOnly || notesOnly || statusFilter !== 'all'
+                  ? 'No documents match the active filters.'
+                  : 'No documents match.'}
           </Text>
         </View>
       ) : (
@@ -281,9 +312,16 @@ export function LibraryView({
                   <Text style={styles.docMeta}>
                     {(() => {
                       const progress = formatReadingProgress(doc.lastPage, doc.pageCount);
+                      const noteCount = Object.keys(doc.notes ?? {}).length;
+                      const details = [
+                        doc.readingSeconds ? formatReadingTime(doc.readingSeconds) : '',
+                        noteCount ? `${noteCount} note${noteCount === 1 ? '' : 's'}` : '',
+                      ].filter(Boolean);
                       return `${doc.finished ? 'Finished · ' : ''}Page ${doc.lastPage}${
                         doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''
-                      }${progress ? ` · ${progress}` : ''} · ${formatRelative(doc.lastOpened)}`;
+                      }${progress ? ` · ${progress}` : ''} · ${formatRelative(doc.lastOpened)}${
+                        details.length ? ` · ${details.join(' · ')}` : ''
+                      }`;
                     })()}
                   </Text>
                 </View>
@@ -414,7 +452,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   insightsCard: { backgroundColor: '#141A22', borderWidth: 1, borderColor: '#1E2630', borderRadius: 12, padding: 14, marginBottom: 16 },
-  insightsTitle: { color: '#9CA3AF', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 10 },
+  insightsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  insightsTitle: { color: '#9CA3AF', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+  insightsShareButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#1E2630' },
+  insightsShareText: { color: '#C4A574', fontSize: 12, fontWeight: '700' },
   insightsRow: { flexDirection: 'row' }, insight: { flex: 1 }, insightValue: { color: '#F4F1EA', fontSize: 22, fontWeight: '700' }, insightLabel: { color: '#9CA3AF', fontSize: 12, marginTop: 2 },
   continueTitle: {
     color: '#F4F1EA',
