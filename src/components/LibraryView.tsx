@@ -96,7 +96,13 @@ export function LibraryView({
     } else if (statusFilter === 'finished') {
       base = base.filter((doc) => doc.finished);
     }
-    if (needle) base = base.filter((doc) => doc.name.toLowerCase().includes(needle));
+    if (needle) {
+      base = base.filter(
+        (doc) =>
+          doc.name.toLowerCase().includes(needle) ||
+          Object.values(doc.notes ?? {}).some((note) => note.toLowerCase().includes(needle)),
+      );
+    }
     return sortLibraryByMode(base, sortMode);
   }, [documents, query, sortMode, pinnedOnly, statusFilter]);
 
@@ -183,9 +189,9 @@ export function LibraryView({
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search library"
+            placeholder="Search titles and notes"
             placeholderTextColor="#6B7280"
-            accessibilityLabel="Search library by name"
+            accessibilityLabel="Search library by title or page-note text"
             clearButtonMode="while-editing"
             style={styles.search}
           />
