@@ -13,7 +13,9 @@ Aado focuses on **reading comfort** first:
 - Immersive chrome that hides while you read
 - In-document search, bookmarks, and last-page restore
 - Page-specific reading notes with quick navigation
+- Shareable page-note summaries
 - Local reading-time, completion, and note insights
+- Library filters for unread, in-progress, and finished documents
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open
 

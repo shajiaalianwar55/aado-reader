@@ -193,6 +193,21 @@ export default function ReaderScreen() {
     }
   }, [bookmarks, title]);
 
+  const onShareNotes = useCallback(async () => {
+    const entries = Object.entries(notes)
+      .map(([notePage, text]) => ({ page: Number(notePage), text }))
+      .sort((a, b) => a.page - b.page);
+    if (!entries.length) return;
+
+    const lines = entries.map((entry) => `Page ${entry.page}\n${entry.text}`).join('\n\n');
+    const message = `Notes for ${title}\n\n${lines}`;
+    try {
+      await Share.share({ message, title: `${title} notes` });
+    } catch (error) {
+      Alert.alert('Could not share notes', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [notes, title]);
+
   const onThemeChange = useCallback((next: ReadingThemeId) => {
     setThemeId(next);
     loadSettings().then((current) => saveSettings({ ...current, theme: next })).catch(() => undefined);
@@ -365,6 +380,7 @@ export default function ReaderScreen() {
             page={page}
             notes={notes}
             onJump={goPage}
+            onShare={onShareNotes}
             onSave={async (notePage, text) => {
               const next = { ...notes };
               if (text) next[String(notePage)] = text;

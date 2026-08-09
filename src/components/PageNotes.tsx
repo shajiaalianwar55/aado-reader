@@ -8,9 +8,10 @@ type Props = {
   notes: Record<string, string>;
   onSave: (page: number, note: string) => void;
   onJump: (page: number) => void;
+  onShare?: () => void;
 };
 
-export function PageNotes({ theme, page, notes, onSave, onJump }: Props) {
+export function PageNotes({ theme, page, notes, onSave, onJump, onShare }: Props) {
   const [visible, setVisible] = useState(false);
   const [draft, setDraft] = useState('');
   const entries = useMemo(
@@ -29,6 +30,15 @@ export function PageNotes({ theme, page, notes, onSave, onJump }: Props) {
           <Text style={[styles.buttonText, { color: theme.accent }]}>{notes[String(page)] ? 'Edit page note' : 'Add page note'}</Text>
         </Pressable>
         <Text style={[styles.count, { color: theme.textMuted }]}>{entries.length} note{entries.length === 1 ? '' : 's'}</Text>
+        {entries.length > 0 && onShare ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share page notes"
+            onPress={onShare}
+            style={[styles.shareButton, { borderColor: theme.border }]}>
+            <Text style={[styles.shareText, { color: theme.accent }]}>Share notes</Text>
+          </Pressable>
+        ) : null}
         {entries.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pages}>
             {entries.map((entry) => (
@@ -72,6 +82,8 @@ export function PageNotes({ theme, page, notes, onSave, onJump }: Props) {
 const styles = StyleSheet.create({
   bar: { minHeight: 48, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
   button: { paddingVertical: 7 }, buttonText: { fontWeight: '700', fontSize: 13 }, count: { fontSize: 12 }, pages: { gap: 6 },
+  shareButton: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
+  shareText: { fontSize: 12, fontWeight: '700' },
   page: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6, fontSize: 12 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', padding: 24 },
   modal: { borderWidth: 1, borderRadius: 14, padding: 18, gap: 14 }, title: { fontSize: 18, fontWeight: '700' },

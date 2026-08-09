@@ -41,6 +41,15 @@ const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
   { id: 'progress', label: 'Progress' },
 ];
 
+type ReadingStatusFilter = 'all' | 'unread' | 'reading' | 'finished';
+
+const STATUS_OPTIONS: { id: ReadingStatusFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'unread', label: 'Unread' },
+  { id: 'reading', label: 'Reading' },
+  { id: 'finished', label: 'Finished' },
+];
+
 function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
@@ -67,6 +76,7 @@ export function LibraryView({
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<LibrarySortMode>('recent');
+  const [statusFilter, setStatusFilter] = useState<ReadingStatusFilter>('all');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const emptyLibrary = documents.length === 0;
   const insights = useMemo(() => ({
@@ -79,9 +89,16 @@ export function LibraryView({
     const needle = query.trim().toLowerCase();
     let base = documents;
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
+    if (statusFilter === 'unread') {
+      base = base.filter((doc) => !doc.finished && doc.lastPage <= 1);
+    } else if (statusFilter === 'reading') {
+      base = base.filter((doc) => !doc.finished && doc.lastPage > 1);
+    } else if (statusFilter === 'finished') {
+      base = base.filter((doc) => doc.finished);
+    }
     if (needle) base = base.filter((doc) => doc.name.toLowerCase().includes(needle));
     return sortLibraryByMode(base, sortMode);
-  }, [documents, query, sortMode, pinnedOnly]);
+  }, [documents, query, sortMode, pinnedOnly, statusFilter]);
 
   const empty = emptyLibrary || filtered.length === 0;
 
@@ -198,6 +215,25 @@ export function LibraryView({
               </Text>
             </Pressable>
           </View>
+          <Text style={styles.filterLabel}>Reading status</Text>
+          <View style={styles.sortRow}>
+            {STATUS_OPTIONS.map((option) => {
+              const active = statusFilter === option.id;
+              return (
+                <Pressable
+                  key={option.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show ${option.label.toLowerCase()} documents`}
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setStatusFilter(option.id)}
+                  style={[styles.sortChip, active && styles.sortChipActive]}>
+                  <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </>
       ) : null}
 
@@ -209,9 +245,13 @@ export function LibraryView({
           <Text style={styles.emptyBody}>
             {emptyLibrary
               ? 'Documents you open appear in this list so you can jump back to the last page you read.'
-              : pinnedOnly && !query.trim()
-                ? 'No pinned documents yet. Pin a PDF to keep it here.'
-                : `No documents match “${query.trim()}”.`}
+              : query.trim()
+                ? `No documents match “${query.trim()}”.`
+                : pinnedOnly && statusFilter === 'all'
+                  ? 'No pinned documents yet. Pin a PDF to keep it here.'
+                  : pinnedOnly
+                    ? `No pinned ${statusFilter} documents yet.`
+                    : `No ${statusFilter} documents yet.`}
           </Text>
         </View>
       ) : (
@@ -396,6 +436,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 16,
+  },
+  filterLabel: {
+    color: '#9CA3AF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   sortChip: {
     paddingHorizontal: 12,
