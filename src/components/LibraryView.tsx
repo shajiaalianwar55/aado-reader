@@ -90,6 +90,12 @@ export function LibraryView({
   const [statusFilter, setStatusFilter] = useState<ReadingStatusFilter>('all');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
+  const hasActiveFilters =
+    Boolean(query.trim()) ||
+    sortMode !== 'recent' ||
+    statusFilter !== 'all' ||
+    pinnedOnly ||
+    notesOnly;
   const emptyLibrary = documents.length === 0;
   const insights = useMemo(() => ({
     minutes: Math.floor(documents.reduce((sum, doc) => sum + (doc.readingSeconds ?? 0), 0) / 60),
@@ -274,6 +280,21 @@ export function LibraryView({
               );
             })}
           </View>
+          {hasActiveFilters ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear library search, sorting, and filters"
+              onPress={() => {
+                setQuery('');
+                setSortMode('recent');
+                setStatusFilter('all');
+                setPinnedOnly(false);
+                setNotesOnly(false);
+              }}
+              style={({ pressed }) => [styles.clearFiltersButton, pressed && styles.pressed]}>
+              <Text style={styles.clearFiltersText}>Clear filters</Text>
+            </Pressable>
+          ) : null}
         </>
       ) : null}
 
@@ -492,6 +513,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     marginBottom: 8,
     textTransform: 'uppercase',
+  },
+  clearFiltersButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: -8,
+    marginBottom: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C4A574',
+  },
+  clearFiltersText: {
+    color: '#C4A574',
+    fontSize: 13,
+    fontWeight: '700',
   },
   sortChip: {
     paddingHorizontal: 12,
