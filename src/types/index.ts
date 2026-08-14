@@ -20,7 +20,7 @@ export type TrashedDocument = LibraryDocument & {
   deletedAt: number;
 };
 
-export type LibrarySortMode = 'recent' | 'name' | 'progress';
+export type LibrarySortMode = 'recent' | 'name' | 'progress' | 'readingTime';
 
 export type ReaderSettings = {
   theme: ReadingThemeId;

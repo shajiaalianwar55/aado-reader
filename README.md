@@ -17,6 +17,7 @@ Aado focuses on **reading comfort** first:
 - Local reading-time, completion, and note insights with sharing
 - Per-document reading-time and note totals
 - Library filters for unread, in-progress, finished, and annotated documents
+- Library sorting by recency, title, progress, and reading time
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open
 

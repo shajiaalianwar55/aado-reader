@@ -40,6 +40,7 @@ const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
   { id: 'recent', label: 'Recent' },
   { id: 'name', label: 'Name' },
   { id: 'progress', label: 'Progress' },
+  { id: 'readingTime', label: 'Time read' },
 ];
 
 type ReadingStatusFilter = 'all' | 'unread' | 'reading' | 'finished';

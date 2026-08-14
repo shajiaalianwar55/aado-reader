@@ -36,6 +36,7 @@ export function sortLibraryByMode<
     lastOpened: number;
     lastPage: number;
     pageCount: number;
+    readingSeconds?: number;
     pinned?: boolean;
   },
 >(docs: T[], mode: import('@/src/types').LibrarySortMode): T[] {
@@ -49,6 +50,9 @@ export function sortLibraryByMode<
       const aPct = a.pageCount > 0 ? a.lastPage / a.pageCount : 0;
       const bPct = b.pageCount > 0 ? b.lastPage / b.pageCount : 0;
       return bPct - aPct;
+    }
+    if (mode === 'readingTime') {
+      return (b.readingSeconds ?? 0) - (a.readingSeconds ?? 0);
     }
     return b.lastOpened - a.lastOpened;
   });
