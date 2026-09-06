@@ -16,6 +16,8 @@ Aado focuses on **reading comfort** first:
 - Shareable page-note summaries
 - Local reading-time, completion, and note insights with sharing
 - Per-document reading-time and note totals
+- Configurable daily reading goals with at-a-glance progress
+- Seven-day reading activity and current streak tracking
 - Library filters for unread, in-progress, finished, and annotated documents
 - One-tap reset for library search, sorting, and filters
 - Library sorting by recency, title, progress, and reading time

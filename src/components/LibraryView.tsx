@@ -9,6 +9,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatReadingProgress } from '@/src/lib/readingProgress';
+import {
+  getLocalDateKey,
+  getReadingStreak,
+  getRecentReadingDays,
+} from '@/src/lib/readingActivity';
 import { sortLibraryByMode } from '@/src/store/constants';
 import type { LibrarySortMode } from '@/src/types';
 
@@ -23,7 +28,9 @@ type LibraryScreenProps = {
     finished?: boolean;
     notes?: Record<string, string>;
     readingSeconds?: number;
+    readingByDay?: Record<string, number>;
   }>;
+  dailyGoalMinutes?: number;
   onOpenDocument?: () => void;
   onSelectDocument?: (id: string) => void;
   onRemoveDocument?: (id: string) => void;
@@ -73,6 +80,7 @@ function formatReadingTime(seconds: number): string {
 
 export function LibraryView({
   documents = [],
+  dailyGoalMinutes = 20,
   onOpenDocument,
   onSelectDocument,
   onRemoveDocument,
@@ -97,11 +105,27 @@ export function LibraryView({
     pinnedOnly ||
     notesOnly;
   const emptyLibrary = documents.length === 0;
-  const insights = useMemo(() => ({
-    minutes: Math.floor(documents.reduce((sum, doc) => sum + (doc.readingSeconds ?? 0), 0) / 60),
-    finished: documents.filter((doc) => doc.finished).length,
-    notes: documents.reduce((sum, doc) => sum + Object.keys(doc.notes ?? {}).length, 0),
-  }), [documents]);
+  const insights = useMemo(() => {
+    const todayKey = getLocalDateKey();
+    const todaySeconds = documents.reduce(
+      (sum, doc) => sum + (doc.readingByDay?.[todayKey] ?? 0),
+      0,
+    );
+    return {
+      minutes: Math.floor(documents.reduce((sum, doc) => sum + (doc.readingSeconds ?? 0), 0) / 60),
+      finished: documents.filter((doc) => doc.finished).length,
+      notes: documents.reduce((sum, doc) => sum + Object.keys(doc.notes ?? {}).length, 0),
+      todaySeconds,
+      todayMinutes: Math.floor(todaySeconds / 60),
+      streak: getReadingStreak(documents),
+      recentDays: getRecentReadingDays(documents),
+    };
+  }, [documents]);
+  const goalProgress = Math.min(
+    1,
+    insights.todaySeconds / (Math.max(1, dailyGoalMinutes) * 60),
+  );
+  const busiestDaySeconds = Math.max(60, ...insights.recentDays.map((day) => day.seconds));
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -190,6 +214,53 @@ export function LibraryView({
               : ''}
           </Text>
         </Pressable>
+      ) : null}
+
+      {!emptyLibrary ? (
+        <View style={styles.goalCard}>
+          <View style={styles.goalHeader}>
+            <View>
+              <Text style={styles.goalTitle}>Today</Text>
+              <Text style={styles.goalValue}>
+                {insights.todayMinutes} of {dailyGoalMinutes} min
+              </Text>
+            </View>
+            <Text style={styles.streakText}>
+              {insights.streak} day{insights.streak === 1 ? '' : 's'} in a row
+            </Text>
+          </View>
+          <View
+            accessibilityRole="progressbar"
+            accessibilityLabel="Daily reading goal"
+            accessibilityValue={{
+              min: 0,
+              max: dailyGoalMinutes,
+              now: Math.min(insights.todayMinutes, dailyGoalMinutes),
+            }}
+            style={styles.goalTrack}>
+            <View style={[styles.goalFill, { width: `${goalProgress * 100}%` }]} />
+          </View>
+          <View style={styles.activityRow}>
+            {insights.recentDays.map((day) => (
+              <View key={day.key} style={styles.activityDay}>
+                <View style={styles.activityBarTrack}>
+                  <View
+                    style={[
+                      styles.activityBar,
+                      {
+                        height: day.seconds
+                          ? `${Math.max(6, (day.seconds / busiestDaySeconds) * 100)}%`
+                          : '0%',
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.activityLabel}>{day.label}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.activityCaption}>Last 7 days</Text>
+        </View>
       ) : null}
 
       {!emptyLibrary ? (
@@ -474,6 +545,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   insightsCard: { backgroundColor: '#141A22', borderWidth: 1, borderColor: '#1E2630', borderRadius: 12, padding: 14, marginBottom: 16 },
+  goalCard: { backgroundColor: '#141A22', borderWidth: 1, borderColor: '#1E2630', borderRadius: 12, padding: 14, marginBottom: 16 },
+  goalHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
+  goalTitle: { color: '#9CA3AF', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+  goalValue: { color: '#F4F1EA', fontSize: 20, fontWeight: '700', marginTop: 3 },
+  streakText: { color: '#C4A574', fontSize: 12, fontWeight: '700', textAlign: 'right' },
+  goalTrack: { height: 7, borderRadius: 4, backgroundColor: '#2A3441', overflow: 'hidden', marginTop: 12 },
+  goalFill: { height: '100%', borderRadius: 4, backgroundColor: '#C4A574' },
+  activityRow: { height: 58, flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 14 },
+  activityDay: { flex: 1, height: '100%', alignItems: 'center', gap: 4 },
+  activityBarTrack: { flex: 1, width: 8, borderRadius: 4, backgroundColor: '#1E2630', justifyContent: 'flex-end', overflow: 'hidden' },
+  activityBar: { width: '100%', borderRadius: 4, backgroundColor: '#C4A574' },
+  activityLabel: { color: '#6B7280', fontSize: 10, fontWeight: '600' },
+  activityCaption: { color: '#6B7280', fontSize: 11, marginTop: 5, textAlign: 'center' },
   insightsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   insightsTitle: { color: '#9CA3AF', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
   insightsShareButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#1E2630' },

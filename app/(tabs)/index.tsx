@@ -5,8 +5,9 @@ import { LibraryView } from '@/src/components/LibraryView';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
 import { TrashModal } from '@/src/components/TrashModal';
 import { pickPdfDocuments } from '@/src/lib/pickPdf';
+import { getLocalDateKey, getReadingStreak } from '@/src/lib/readingActivity';
 import {
-  emptyTrash, loadLibrary, loadTrash, permanentlyDeleteDocument,
+  emptyTrash, loadLibrary, loadSettings, loadTrash, permanentlyDeleteDocument,
   restoreDocument, trashDocument, updateDocument, upsertDocument,
 } from '@/src/store/libraryStore';
 import type { LibraryDocument, TrashedDocument } from '@/src/types';
@@ -18,11 +19,17 @@ export default function LibraryScreen() {
   const [renameId, setRenameId] = useState<string | null>(null);
   const [trash, setTrash] = useState<TrashedDocument[]>([]);
   const [trashVisible, setTrashVisible] = useState(false);
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
 
   const refresh = useCallback(async () => {
-    const [docs, removed] = await Promise.all([loadLibrary(), loadTrash()]);
+    const [docs, removed, settings] = await Promise.all([
+      loadLibrary(),
+      loadTrash(),
+      loadSettings(),
+    ]);
     setDocuments(docs);
     setTrash(removed);
+    setDailyGoalMinutes(settings.dailyGoalMinutes);
   }, []);
 
   useFocusEffect(
@@ -194,11 +201,21 @@ export default function LibraryScreen() {
       (sum, document) => sum + Object.keys(document.notes ?? {}).length,
       0,
     );
+    const todayKey = getLocalDateKey();
+    const todayMinutes = Math.floor(
+      documents.reduce(
+        (sum, document) => sum + (document.readingByDay?.[todayKey] ?? 0),
+        0,
+      ) / 60,
+    );
+    const streak = getReadingStreak(documents);
     const message = [
       'My Aado reading insights',
       '',
       `${documents.length} document${documents.length === 1 ? '' : 's'} in my library`,
       `${totalMinutes} minute${totalMinutes === 1 ? '' : 's'} read`,
+      `${todayMinutes} of ${dailyGoalMinutes} daily goal minutes today`,
+      `${streak} day reading streak`,
       `${finishedCount} completed`,
       `${noteCount} note${noteCount === 1 ? '' : 's'} saved`,
     ].join('\n');
@@ -208,12 +225,13 @@ export default function LibraryScreen() {
     } catch (error) {
       Alert.alert('Could not share insights', error instanceof Error ? error.message : 'Unknown error');
     }
-  }, [documents]);
+  }, [dailyGoalMinutes, documents]);
 
   return (
     <>
       <LibraryView
         documents={documents}
+        dailyGoalMinutes={dailyGoalMinutes}
         onOpenDocument={openPicker}
         onSelectDocument={openDocument}
         onRemoveDocument={onRemoveDocument}

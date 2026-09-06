@@ -12,6 +12,7 @@ export type LibraryDocument = {
   bookmarks: number[];
   notes?: Record<string, string>;
   readingSeconds?: number;
+  readingByDay?: Record<string, number>;
   pinned?: boolean;
   finished?: boolean;
 };
@@ -30,4 +31,5 @@ export type ReaderSettings = {
   keepAwake: boolean;
   haptics: boolean;
   autoHideMs: number;
+  dailyGoalMinutes: number;
 };

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
+import { getLocalDateKey } from '@/src/lib/readingActivity';
 import { getDocument, updateDocument } from '@/src/store/libraryStore';
 
 const SAVE_INTERVAL_MS = 30_000;
@@ -23,8 +24,13 @@ export function useReadingTime(documentId: string | undefined, active: boolean) 
       accumulated.current = 0;
       const document = await getDocument(documentId);
       if (document) {
+        const dayKey = getLocalDateKey(new Date(now));
         await updateDocument(documentId, {
           readingSeconds: (document.readingSeconds ?? 0) + elapsed,
+          readingByDay: {
+            ...document.readingByDay,
+            [dayKey]: (document.readingByDay?.[dayKey] ?? 0) + elapsed,
+          },
         });
       }
     };

@@ -15,6 +15,7 @@ export const defaultSettings: ReaderSettings = {
   keepAwake: true,
   haptics: true,
   autoHideMs: 4000,
+  dailyGoalMinutes: 20,
 };
 
 export function createDocumentId(uri: string, name: string): string {
