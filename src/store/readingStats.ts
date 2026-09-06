@@ -56,6 +56,10 @@ export function calculateStreak(stats: ReadingStats, today = new Date()): number
   const active = new Set(stats.days.filter((day) => day.seconds > 0).map((day) => day.date));
   let streak = 0;
   const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  // Keep an active streak visible until today ends, even before today's session.
+  if (!active.has(localDateKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
   while (active.has(localDateKey(cursor))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);

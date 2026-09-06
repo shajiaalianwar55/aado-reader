@@ -190,6 +190,25 @@ export default function SettingsScreen() {
         })}
       </View>
 
+      <Text style={styles.section}>Daily reading goal</Text>
+      <View style={styles.row}>
+        {[10, 20, 30, 45, 60].map((minutes) => {
+          const active = settings.dailyGoalMinutes === minutes;
+          return (
+            <Pressable
+              key={minutes}
+              accessibilityRole="button"
+              accessibilityLabel={`Set daily reading goal to ${minutes} minutes`}
+              accessibilityState={{ selected: active }}
+              onPress={() => update({ dailyGoalMinutes: minutes })}
+              style={[styles.chip, active && styles.chipActive]}>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{minutes} min</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={styles.goalHint}>Your progress and seven-day activity stay on this device.</Text>
+
       <Text style={styles.section}>Library</Text>
       <Pressable
         accessibilityRole="button"
@@ -316,6 +335,12 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 12,
     marginBottom: 24,
+  },
+  goalHint: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 20,
   },
   aboutCard: {
     borderWidth: 1,

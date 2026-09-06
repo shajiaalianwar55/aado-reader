@@ -12,6 +12,15 @@ Aado focuses on **reading comfort** first:
 - Day, sepia, and night themes with brightness control
 - Immersive chrome that hides while you read
 - In-document search, bookmarks, and last-page restore
+- Page-specific reading notes with quick navigation and library search
+- Shareable page-note summaries
+- Local reading-time, completion, and note insights with sharing
+- Per-document reading-time and note totals
+- Configurable daily reading goals with at-a-glance progress
+- Seven-day reading activity and current streak tracking
+- Library filters for unread, in-progress, finished, and annotated documents
+- One-tap reset for library search, sorting, and filters
+- Library sorting by recency, title, progress, and reading time
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open
 

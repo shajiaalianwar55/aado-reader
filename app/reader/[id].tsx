@@ -9,6 +9,7 @@ import { BookmarkBar } from '@/src/components/BookmarkBar';
 import { AnnotationPanel } from '@/src/components/AnnotationPanel';
 import { ChromeTapHint } from '@/src/components/ChromeTapHint';
 import { PageScrubber } from '@/src/components/PageScrubber';
+import { PageNotes } from '@/src/components/PageNotes';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
 import { ReaderChrome } from '@/src/components/ReaderChrome';
 import { ReaderControls } from '@/src/components/ReaderControls';
@@ -19,6 +20,7 @@ import { useAutoHideChrome } from '@/src/hooks/useAutoHideChrome';
 import { useReadingProgress } from '@/src/hooks/useReadingProgress';
 import { useReadingSession } from '@/src/hooks/useReadingSession';
 import { useReadingActivity } from '@/src/hooks/useReadingActivity';
+import { useReadingTime } from '@/src/hooks/useReadingTime';
 import { lightImpactHaptic, selectionHaptic } from '@/src/lib/haptics';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
@@ -44,6 +46,7 @@ export default function ReaderScreen() {
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [annotations, setAnnotations] = useState<PageAnnotation[]>([]);
   const [annotationsVisible, setAnnotationsVisible] = useState(false);
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [matchCount, setMatchCount] = useState(0);
   const [matchIndex, setMatchIndex] = useState(-1);
   const [restored, setRestored] = useState(false);
@@ -55,6 +58,7 @@ export default function ReaderScreen() {
 
   useReadingSession(Boolean(uri) && keepAwake);
   useReadingActivity(params.id, page, Boolean(uri));
+  useReadingTime(params.id, Boolean(uri) && restored);
   useReadingProgress(params.id, page);
   const { bump: bumpChrome } = useAutoHideChrome(chromeVisible, setChromeVisible, autoHideMs);
 
@@ -80,6 +84,7 @@ export default function ReaderScreen() {
         setPageCount(existing.pageCount || 0);
         setBookmarks(existing.bookmarks ?? []);
         setAnnotations(existing.annotations ?? []);
+        setNotes(existing.notes ?? {});
         setRestored(true);
         return;
       }
@@ -222,6 +227,21 @@ export default function ReaderScreen() {
     setAnnotations(next);
     await updateDocument(params.id, { annotations: next });
   }, [annotations, params.id]);
+
+  const onShareNotes = useCallback(async () => {
+    const entries = Object.entries(notes)
+      .map(([notePage, text]) => ({ page: Number(notePage), text }))
+      .sort((a, b) => a.page - b.page);
+    if (!entries.length) return;
+
+    const lines = entries.map((entry) => `Page ${entry.page}\n${entry.text}`).join('\n\n');
+    const message = `Notes for ${title}\n\n${lines}`;
+    try {
+      await Share.share({ message, title: `${title} notes` });
+    } catch (error) {
+      Alert.alert('Could not share notes', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [notes, title]);
 
   const onThemeChange = useCallback((next: ReadingThemeId) => {
     setThemeId(next);
@@ -405,6 +425,20 @@ export default function ReaderScreen() {
             onJump={goPage}
             onClearAll={clearAllBookmarks}
             onShareBookmarks={onShareBookmarks}
+          />
+          <PageNotes
+            theme={theme}
+            page={page}
+            notes={notes}
+            onJump={goPage}
+            onShare={onShareNotes}
+            onSave={async (notePage, text) => {
+              const next = { ...notes };
+              if (text) next[String(notePage)] = text;
+              else delete next[String(notePage)];
+              setNotes(next);
+              await updateDocument(params.id, { notes: next });
+            }}
           />
           <PageScrubber theme={theme} page={page} pageCount={pageCount} onSelect={goPage} />
           <ThemeControls

@@ -1,21 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Share } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
-import { pickPdfDocument } from '@/src/lib/pickPdf';
-import { loadLibrary, removeDocument, updateDocument, upsertDocument } from '@/src/store/libraryStore';
-import type { LibraryDocument } from '@/src/types';
+import { TrashModal } from '@/src/components/TrashModal';
+import { pickPdfDocuments } from '@/src/lib/pickPdf';
+import { getLocalDateKey, getReadingStreak } from '@/src/lib/readingActivity';
+import {
+  emptyTrash, loadLibrary, loadSettings, loadTrash, permanentlyDeleteDocument,
+  restoreDocument, trashDocument, updateDocument, upsertDocument,
+} from '@/src/store/libraryStore';
+import type { LibraryDocument, TrashedDocument } from '@/src/types';
 
 export default function LibraryScreen() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
   const [renameId, setRenameId] = useState<string | null>(null);
+  const [trash, setTrash] = useState<TrashedDocument[]>([]);
+  const [trashVisible, setTrashVisible] = useState(false);
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
 
   const refresh = useCallback(async () => {
-    const docs = await loadLibrary();
+    const [docs, removed, settings] = await Promise.all([
+      loadLibrary(),
+      loadTrash(),
+      loadSettings(),
+    ]);
     setDocuments(docs);
+    setTrash(removed);
+    setDailyGoalMinutes(settings.dailyGoalMinutes);
   }, []);
 
   useFocusEffect(
@@ -32,20 +46,30 @@ export default function LibraryScreen() {
     if (busy) return;
     setBusy(true);
     try {
-      const doc = await pickPdfDocument();
-      if (!doc) return;
-      const existing = documents.find((d) => d.id === doc.id);
-      const merged = existing
-        ? { ...existing, uri: doc.uri, lastOpened: Date.now() }
-        : doc;
-      const next = await upsertDocument(merged);
+      const picked = await pickPdfDocuments();
+      if (!picked.length) return;
+      let next = documents;
+      const imported: LibraryDocument[] = [];
+      for (const doc of picked) {
+        const existing = next.find((item) => item.id === doc.id);
+        const merged = existing
+          ? { ...existing, uri: doc.uri, lastOpened: Date.now() }
+          : doc;
+        next = await upsertDocument(merged);
+        imported.push(merged);
+      }
       setDocuments(next);
-      router.push({
-        pathname: '/reader/[id]',
-        params: { id: merged.id, uri: merged.uri, name: merged.name },
-      });
+      if (imported.length === 1) {
+        const [document] = imported;
+        router.push({
+          pathname: '/reader/[id]',
+          params: { id: document.id, uri: document.uri, name: document.name },
+        });
+      } else {
+        Alert.alert('PDFs added', `${imported.length} documents were added to your library.`);
+      }
     } catch (error) {
-      Alert.alert('Could not open PDF', error instanceof Error ? error.message : 'Unknown error');
+      Alert.alert('Could not add PDFs', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setBusy(false);
     }
@@ -100,8 +124,9 @@ export default function LibraryScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
-            const next = await removeDocument(id);
+            const next = await trashDocument(id);
             setDocuments(next);
+            setTrash(await loadTrash());
           },
         },
       ],
@@ -167,10 +192,46 @@ export default function LibraryScreen() {
     [documents, refresh],
   );
 
+  const onShareInsights = useCallback(async () => {
+    const totalMinutes = Math.floor(
+      documents.reduce((sum, document) => sum + (document.readingSeconds ?? 0), 0) / 60,
+    );
+    const finishedCount = documents.filter((document) => document.finished).length;
+    const noteCount = documents.reduce(
+      (sum, document) => sum + Object.keys(document.notes ?? {}).length,
+      0,
+    );
+    const todayKey = getLocalDateKey();
+    const todayMinutes = Math.floor(
+      documents.reduce(
+        (sum, document) => sum + (document.readingByDay?.[todayKey] ?? 0),
+        0,
+      ) / 60,
+    );
+    const streak = getReadingStreak(documents);
+    const message = [
+      'My Aado reading insights',
+      '',
+      `${documents.length} document${documents.length === 1 ? '' : 's'} in my library`,
+      `${totalMinutes} minute${totalMinutes === 1 ? '' : 's'} read`,
+      `${todayMinutes} of ${dailyGoalMinutes} daily goal minutes today`,
+      `${streak} day reading streak`,
+      `${finishedCount} completed`,
+      `${noteCount} note${noteCount === 1 ? '' : 's'} saved`,
+    ].join('\n');
+
+    try {
+      await Share.share({ title: 'Aado reading insights', message });
+    } catch (error) {
+      Alert.alert('Could not share insights', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [dailyGoalMinutes, documents]);
+
   return (
     <>
       <LibraryView
         documents={documents}
+        dailyGoalMinutes={dailyGoalMinutes}
         onOpenDocument={openPicker}
         onSelectDocument={openDocument}
         onRemoveDocument={onRemoveDocument}
@@ -178,12 +239,32 @@ export default function LibraryScreen() {
         onTogglePin={onTogglePin}
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}
+        onShareInsights={onShareInsights}
+        trashCount={trash.length}
+        onOpenTrash={() => setTrashVisible(true)}
       />
       <RenameDocumentModal
         visible={Boolean(renaming)}
         initialName={renaming?.name ?? ''}
         onCancel={() => setRenameId(null)}
         onSave={onSaveRename}
+      />
+      <TrashModal
+        visible={trashVisible}
+        documents={trash}
+        onClose={() => setTrashVisible(false)}
+        onRestore={async (id) => {
+          await restoreDocument(id);
+          await refresh();
+        }}
+        onDelete={async (id) => {
+          await permanentlyDeleteDocument(id);
+          await refresh();
+        }}
+        onEmpty={async () => {
+          await emptyTrash();
+          await refresh();
+        }}
       />
     </>
   );

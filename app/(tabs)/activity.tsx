@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { loadLibrary } from '@/src/store/libraryStore';
+import { loadLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
 import {
   calculateStreak,
   loadReadingStats,
@@ -19,10 +19,12 @@ export default function ActivityScreen() {
   const [finished, setFinished] = useState(0);
 
   const refresh = useCallback(() => {
-    Promise.all([loadReadingStats(), loadLibrary()]).then(([nextStats, documents]) => {
-      setStats(nextStats);
-      setFinished(documents.filter((doc) => doc.finished).length);
-    });
+    Promise.all([loadReadingStats(), loadLibrary(), loadSettings()]).then(
+      ([nextStats, documents, settings]) => {
+        setStats({ ...nextStats, dailyGoalMinutes: settings.dailyGoalMinutes });
+        setFinished(documents.filter((doc) => doc.finished).length);
+      },
+    );
   }, []);
 
   useFocusEffect(refresh);
@@ -43,7 +45,11 @@ export default function ActivityScreen() {
   const maxMinutes = Math.max(stats.dailyGoalMinutes, ...recentDays.map((day) => day.minutes), 1);
 
   const updateGoal = async (goal: number) => {
-    await setDailyReadingGoal(goal);
+    const settings = await loadSettings();
+    await Promise.all([
+      setDailyReadingGoal(goal),
+      saveSettings({ ...settings, dailyGoalMinutes: goal }),
+    ]);
     setStats((current) => ({ ...current, dailyGoalMinutes: goal }));
   };
 

@@ -21,11 +21,18 @@ export type LibraryDocument = {
   pageCount: number;
   bookmarks: number[];
   annotations?: PageAnnotation[];
+  notes?: Record<string, string>;
+  readingSeconds?: number;
+  readingByDay?: Record<string, number>;
   pinned?: boolean;
   finished?: boolean;
 };
 
-export type LibrarySortMode = 'recent' | 'name' | 'progress';
+export type TrashedDocument = LibraryDocument & {
+  deletedAt: number;
+};
+
+export type LibrarySortMode = 'recent' | 'name' | 'progress' | 'readingTime';
 
 export type ReaderSettings = {
   theme: ReadingThemeId;
@@ -35,6 +42,7 @@ export type ReaderSettings = {
   keepAwake: boolean;
   haptics: boolean;
   autoHideMs: number;
+  dailyGoalMinutes: number;
 };
 
 export type DailyReadingActivity = {
