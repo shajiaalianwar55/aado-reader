@@ -14,6 +14,7 @@ export type PdfViewerHandle = {
   search: (query: string) => void;
   searchNext: () => void;
   searchPrev: () => void;
+  requestPageText: (page: number) => void;
 };
 
 type PdfViewerProps = {
@@ -25,6 +26,7 @@ type PdfViewerProps = {
   onLoad?: (pageCount: number) => void;
   onTap?: () => void;
   onSearchResult?: (count: number, index: number) => void;
+  onPageText?: (page: number, text: string) => void;
   onError?: (message: string) => void;
 };
 
@@ -38,6 +40,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
     onLoad,
     onTap,
     onSearchResult,
+    onPageText,
     onError,
   },
   ref,
@@ -68,6 +71,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
       search: (query) => send({ type: 'search', query }),
       searchNext: () => send({ type: 'searchNext' }),
       searchPrev: () => send({ type: 'searchPrev' }),
+      requestPageText: (page) => send({ type: 'getPageText', page }),
     }),
     [send],
   );
@@ -120,6 +124,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
           pageCount?: number;
           count?: number;
           index?: number;
+          text?: string;
         };
         switch (msg.type) {
           case 'ready':
@@ -141,6 +146,9 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
           case 'search':
             onSearchResult?.(msg.count ?? 0, msg.index ?? -1);
             break;
+          case 'pageText':
+            if (msg.page) onPageText?.(msg.page, msg.text ?? '');
+            break;
           default:
             break;
         }
@@ -148,7 +156,7 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
         // ignore malformed messages
       }
     },
-    [onLoad, onPageChange, onSearchResult, onTap],
+    [onLoad, onPageChange, onPageText, onSearchResult, onTap],
   );
 
   useEffect(() => {
