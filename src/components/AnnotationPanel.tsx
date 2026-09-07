@@ -18,10 +18,11 @@ type Props = {
   onSave: (note: string, color: AnnotationColor) => void;
   onDelete: (id: string) => void;
   onJump: (page: number) => void;
+  onShare: () => void;
 };
 
 export function AnnotationPanel({
-  visible, page, annotations, theme, onClose, onSave, onDelete, onJump,
+  visible, page, annotations, theme, onClose, onSave, onDelete, onJump, onShare,
 }: Props) {
   const current = annotations.find((item) => item.page === page);
   const [note, setNote] = useState('');
@@ -42,9 +43,20 @@ export function AnnotationPanel({
               <Text style={[styles.title, { color: theme.text }]}>Notes & highlights</Text>
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>Page {page}</Text>
             </View>
-            <Pressable accessibilityRole="button" onPress={onClose} style={styles.button}>
-              <Text style={{ color: theme.accent }}>Close</Text>
-            </Pressable>
+            <View style={styles.headerActions}>
+              {annotations.length ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share all colored annotations"
+                  onPress={onShare}
+                  style={styles.button}>
+                  <Text style={{ color: theme.accent }}>Share</Text>
+                </Pressable>
+              ) : null}
+              <Pressable accessibilityRole="button" onPress={onClose} style={styles.button}>
+                <Text style={{ color: theme.accent }}>Close</Text>
+              </Pressable>
+            </View>
           </View>
           <TextInput
             accessibilityLabel={`Note for page ${page}`}
@@ -106,6 +118,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' },
   sheet: { maxHeight: '82%', borderTopWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { marginTop: 3 },
   button: { padding: 8 },

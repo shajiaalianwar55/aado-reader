@@ -27,6 +27,7 @@ type LibraryScreenProps = {
     pinned?: boolean;
     finished?: boolean;
     notes?: Record<string, string>;
+    annotations?: Array<{ note: string }>;
     readingSeconds?: number;
     readingByDay?: Record<string, number>;
   }>;
@@ -78,6 +79,13 @@ function formatReadingTime(seconds: number): string {
   return remainingMinutes ? `${hours}h ${remainingMinutes}m read` : `${hours}h read`;
 }
 
+function getNoteCount(document: {
+  notes?: Record<string, string>;
+  annotations?: Array<{ note: string }>;
+}): number {
+  return Object.keys(document.notes ?? {}).length + (document.annotations?.length ?? 0);
+}
+
 export function LibraryView({
   documents = [],
   dailyGoalMinutes = 20,
@@ -114,7 +122,7 @@ export function LibraryView({
     return {
       minutes: Math.floor(documents.reduce((sum, doc) => sum + (doc.readingSeconds ?? 0), 0) / 60),
       finished: documents.filter((doc) => doc.finished).length,
-      notes: documents.reduce((sum, doc) => sum + Object.keys(doc.notes ?? {}).length, 0),
+      notes: documents.reduce((sum, doc) => sum + getNoteCount(doc), 0),
       todaySeconds,
       todayMinutes: Math.floor(todaySeconds / 60),
       streak: getReadingStreak(documents),
@@ -131,7 +139,7 @@ export function LibraryView({
     const needle = query.trim().toLowerCase();
     let base = documents;
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
-    if (notesOnly) base = base.filter((doc) => Object.keys(doc.notes ?? {}).length > 0);
+    if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
     if (statusFilter === 'unread') {
       base = base.filter((doc) => !doc.finished && doc.lastPage <= 1);
     } else if (statusFilter === 'reading') {
@@ -143,7 +151,10 @@ export function LibraryView({
       base = base.filter(
         (doc) =>
           doc.name.toLowerCase().includes(needle) ||
-          Object.values(doc.notes ?? {}).some((note) => note.toLowerCase().includes(needle)),
+          Object.values(doc.notes ?? {}).some((note) => note.toLowerCase().includes(needle)) ||
+          (doc.annotations ?? []).some((annotation) =>
+            annotation.note.toLowerCase().includes(needle),
+          ),
       );
     }
     return sortLibraryByMode(base, sortMode);
@@ -264,7 +275,7 @@ export function LibraryView({
       ) : null}
 
       {!emptyLibrary ? (
-        <View style={styles.insightsCard} accessibilityLabel={`${insights.minutes} minutes read, ${insights.finished} completed, ${insights.notes} notes`}>
+        <View style={styles.insightsCard} accessibilityLabel={`${insights.minutes} minutes read, ${insights.finished} completed, ${insights.notes} annotations`}>
           <View style={styles.insightsHeader}>
             <Text style={styles.insightsTitle}>Reading insights</Text>
             {onShareInsights ? (
@@ -280,7 +291,7 @@ export function LibraryView({
           <View style={styles.insightsRow}>
             <View style={styles.insight}><Text style={styles.insightValue}>{insights.minutes}</Text><Text style={styles.insightLabel}>minutes</Text></View>
             <View style={styles.insight}><Text style={styles.insightValue}>{insights.finished}</Text><Text style={styles.insightLabel}>completed</Text></View>
-            <View style={styles.insight}><Text style={styles.insightValue}>{insights.notes}</Text><Text style={styles.insightLabel}>notes</Text></View>
+            <View style={styles.insight}><Text style={styles.insightValue}>{insights.notes}</Text><Text style={styles.insightLabel}>annotations</Text></View>
           </View>
         </View>
       ) : null}
@@ -290,9 +301,9 @@ export function LibraryView({
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search titles and notes"
+            placeholder="Search titles, notes, and highlights"
             placeholderTextColor="#6B7280"
-            accessibilityLabel="Search library by title or page-note text"
+            accessibilityLabel="Search library by title, page-note, or highlight text"
             clearButtonMode="while-editing"
             style={styles.search}
           />
@@ -323,12 +334,12 @@ export function LibraryView({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={notesOnly ? 'Include documents without notes' : 'Show documents with notes only'}
+              accessibilityLabel={notesOnly ? 'Include documents without annotations' : 'Show annotated documents only'}
               accessibilityState={{ selected: notesOnly }}
               onPress={() => setNotesOnly((value) => !value)}
               style={[styles.sortChip, notesOnly && styles.sortChipActive]}>
               <Text style={[styles.sortChipText, notesOnly && styles.sortChipTextActive]}>
-                Has notes
+                Annotated
               </Text>
             </Pressable>
           </View>
@@ -405,10 +416,12 @@ export function LibraryView({
                   <Text style={styles.docMeta}>
                     {(() => {
                       const progress = formatReadingProgress(doc.lastPage, doc.pageCount);
-                      const noteCount = Object.keys(doc.notes ?? {}).length;
+                      const noteCount = getNoteCount(doc);
                       const details = [
                         doc.readingSeconds ? formatReadingTime(doc.readingSeconds) : '',
-                        noteCount ? `${noteCount} note${noteCount === 1 ? '' : 's'}` : '',
+                        noteCount
+                          ? `${noteCount} annotation${noteCount === 1 ? '' : 's'}`
+                          : '',
                       ].filter(Boolean);
                       return `${doc.finished ? 'Finished · ' : ''}Page ${doc.lastPage}${
                         doc.pageCount > 0 ? ` of ${doc.pageCount}` : ''

@@ -14,6 +14,8 @@ Aado focuses on **reading comfort** first:
 - In-document search, bookmarks, and last-page restore
 - Page-specific reading notes with quick navigation and library search
 - Shareable page-note summaries
+- Library search and filtering across notes and colored highlights
+- Shareable colored-annotation summaries with page references
 - Local reading-time, completion, and note insights with sharing
 - Per-document reading-time and note totals
 - Configurable daily reading goals with at-a-glance progress

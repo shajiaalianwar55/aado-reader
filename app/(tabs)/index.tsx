@@ -198,7 +198,10 @@ export default function LibraryScreen() {
     );
     const finishedCount = documents.filter((document) => document.finished).length;
     const noteCount = documents.reduce(
-      (sum, document) => sum + Object.keys(document.notes ?? {}).length,
+      (sum, document) =>
+        sum +
+        Object.keys(document.notes ?? {}).length +
+        (document.annotations?.length ?? 0),
       0,
     );
     const todayKey = getLocalDateKey();
@@ -217,7 +220,7 @@ export default function LibraryScreen() {
       `${todayMinutes} of ${dailyGoalMinutes} daily goal minutes today`,
       `${streak} day reading streak`,
       `${finishedCount} completed`,
-      `${noteCount} note${noteCount === 1 ? '' : 's'} saved`,
+      `${noteCount} annotation${noteCount === 1 ? '' : 's'} saved`,
     ].join('\n');
 
     try {

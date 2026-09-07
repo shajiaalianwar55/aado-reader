@@ -228,6 +228,27 @@ export default function ReaderScreen() {
     await updateDocument(params.id, { annotations: next });
   }, [annotations, params.id]);
 
+  const onShareAnnotations = useCallback(async () => {
+    if (!annotations.length) return;
+    const lines = annotations
+      .map((annotation) => {
+        const heading = `Page ${annotation.page} · ${annotation.color} highlight`;
+        return annotation.note ? `${heading}\n${annotation.note}` : heading;
+      })
+      .join('\n\n');
+    try {
+      await Share.share({
+        title: `${title} annotations`,
+        message: `Annotations for ${title}\n\n${lines}`,
+      });
+    } catch (error) {
+      Alert.alert(
+        'Could not share annotations',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+    }
+  }, [annotations, title]);
+
   const onShareNotes = useCallback(async () => {
     const entries = Object.entries(notes)
       .map(([notePage, text]) => ({ page: Number(notePage), text }))
@@ -495,6 +516,7 @@ export default function ReaderScreen() {
         onClose={() => setAnnotationsVisible(false)}
         onSave={saveAnnotation}
         onDelete={deleteAnnotation}
+        onShare={onShareAnnotations}
         onJump={(target) => {
           setAnnotationsVisible(false);
           goPage(target);
