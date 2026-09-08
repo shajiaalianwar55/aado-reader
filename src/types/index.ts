@@ -24,6 +24,8 @@ export type LibraryDocument = {
   notes?: Record<string, string>;
   readingSeconds?: number;
   readingByDay?: Record<string, number>;
+  collection?: string;
+  archived?: boolean;
   pinned?: boolean;
   finished?: boolean;
 };

@@ -30,13 +30,17 @@ type LibraryScreenProps = {
     annotations?: Array<{ note: string }>;
     readingSeconds?: number;
     readingByDay?: Record<string, number>;
+    collection?: string;
+    archived?: boolean;
   }>;
   dailyGoalMinutes?: number;
   onOpenDocument?: () => void;
   onSelectDocument?: (id: string) => void;
   onRemoveDocument?: (id: string) => void;
   onRenameDocument?: (id: string) => void;
+  onOrganizeDocument?: (id: string) => void;
   onTogglePin?: (id: string) => void;
+  onToggleArchived?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
   onToggleFinished?: (id: string) => void;
   onShareInsights?: () => void;
@@ -93,7 +97,9 @@ export function LibraryView({
   onSelectDocument,
   onRemoveDocument,
   onRenameDocument,
+  onOrganizeDocument,
   onTogglePin,
+  onToggleArchived,
   onRestartDocument,
   onToggleFinished,
   onShareInsights,
@@ -106,12 +112,28 @@ export function LibraryView({
   const [statusFilter, setStatusFilter] = useState<ReadingStatusFilter>('all');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
+  const [collectionFilter, setCollectionFilter] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const collections = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          documents
+            .map((document) => document.collection?.trim())
+            .filter((collection): collection is string => Boolean(collection)),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [documents],
+  );
+  const archivedCount = documents.filter((document) => document.archived).length;
   const hasActiveFilters =
     Boolean(query.trim()) ||
     sortMode !== 'recent' ||
     statusFilter !== 'all' ||
     pinnedOnly ||
-    notesOnly;
+    notesOnly ||
+    collectionFilter !== 'all' ||
+    showArchived;
   const emptyLibrary = documents.length === 0;
   const insights = useMemo(() => {
     const todayKey = getLocalDateKey();
@@ -137,7 +159,10 @@ export function LibraryView({
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    let base = documents;
+    let base = documents.filter((doc) => Boolean(doc.archived) === showArchived);
+    if (collectionFilter !== 'all') {
+      base = base.filter((doc) => doc.collection === collectionFilter);
+    }
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
     if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
     if (statusFilter === 'unread') {
@@ -151,6 +176,7 @@ export function LibraryView({
       base = base.filter(
         (doc) =>
           doc.name.toLowerCase().includes(needle) ||
+          doc.collection?.toLowerCase().includes(needle) ||
           Object.values(doc.notes ?? {}).some((note) => note.toLowerCase().includes(needle)) ||
           (doc.annotations ?? []).some((annotation) =>
             annotation.note.toLowerCase().includes(needle),
@@ -158,7 +184,16 @@ export function LibraryView({
       );
     }
     return sortLibraryByMode(base, sortMode);
-  }, [documents, query, sortMode, pinnedOnly, notesOnly, statusFilter]);
+  }, [
+    collectionFilter,
+    documents,
+    notesOnly,
+    pinnedOnly,
+    query,
+    showArchived,
+    sortMode,
+    statusFilter,
+  ]);
 
   const empty = emptyLibrary || filtered.length === 0;
 
@@ -167,6 +202,7 @@ export function LibraryView({
     const unfinished = documents
       .filter(
         (d) =>
+          !d.archived &&
           !d.finished &&
           d.lastPage > 1 &&
           (d.pageCount === 0 || d.lastPage < d.pageCount),
@@ -362,6 +398,69 @@ export function LibraryView({
               );
             })}
           </View>
+          <Text style={styles.filterLabel}>Library view</Text>
+          <View style={styles.sortRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Show active documents"
+              accessibilityState={{ selected: !showArchived }}
+              onPress={() => setShowArchived(false)}
+              style={[styles.sortChip, !showArchived && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, !showArchived && styles.sortChipTextActive]}>
+                Active
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Show ${archivedCount} archived documents`}
+              accessibilityState={{ selected: showArchived }}
+              onPress={() => setShowArchived(true)}
+              style={[styles.sortChip, showArchived && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, showArchived && styles.sortChipTextActive]}>
+                Archived ({archivedCount})
+              </Text>
+            </Pressable>
+          </View>
+          {collections.length ? (
+            <>
+              <Text style={styles.filterLabel}>Collection</Text>
+              <View style={styles.sortRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Show every collection"
+                  accessibilityState={{ selected: collectionFilter === 'all' }}
+                  onPress={() => setCollectionFilter('all')}
+                  style={[
+                    styles.sortChip,
+                    collectionFilter === 'all' && styles.sortChipActive,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.sortChipText,
+                      collectionFilter === 'all' && styles.sortChipTextActive,
+                    ]}>
+                    All
+                  </Text>
+                </Pressable>
+                {collections.map((collection) => {
+                  const active = collectionFilter === collection;
+                  return (
+                    <Pressable
+                      key={collection}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Show ${collection} collection`}
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setCollectionFilter(collection)}
+                      style={[styles.sortChip, active && styles.sortChipActive]}>
+                      <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>
+                        {collection}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
           {hasActiveFilters ? (
             <Pressable
               accessibilityRole="button"
@@ -372,6 +471,8 @@ export function LibraryView({
                 setStatusFilter('all');
                 setPinnedOnly(false);
                 setNotesOnly(false);
+                setCollectionFilter('all');
+                setShowArchived(false);
               }}
               style={({ pressed }) => [styles.clearFiltersButton, pressed && styles.pressed]}>
               <Text style={styles.clearFiltersText}>Clear filters</Text>
@@ -390,7 +491,11 @@ export function LibraryView({
               ? 'Documents you open appear in this list so you can jump back to the last page you read.'
               : query.trim()
                 ? `No documents match “${query.trim()}”.`
-                : pinnedOnly || notesOnly || statusFilter !== 'all'
+                : pinnedOnly ||
+                    notesOnly ||
+                    statusFilter !== 'all' ||
+                    collectionFilter !== 'all' ||
+                    showArchived
                   ? 'No documents match the active filters.'
                   : 'No documents match.'}
           </Text>
@@ -398,7 +503,9 @@ export function LibraryView({
       ) : (
         <View style={styles.list}>
           {filtered.map((doc) => (
-            <View key={doc.id} style={[styles.row, doc.pinned && styles.rowPinned]}>
+            <View
+              key={doc.id}
+              style={[styles.row, doc.pinned && styles.rowPinned, doc.archived && styles.rowArchived]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${doc.name}`}
@@ -418,6 +525,7 @@ export function LibraryView({
                       const progress = formatReadingProgress(doc.lastPage, doc.pageCount);
                       const noteCount = getNoteCount(doc);
                       const details = [
+                        doc.collection ? doc.collection : '',
                         doc.readingSeconds ? formatReadingTime(doc.readingSeconds) : '',
                         noteCount
                           ? `${noteCount} annotation${noteCount === 1 ? '' : 's'}`
@@ -477,6 +585,28 @@ export function LibraryView({
                     onPress={() => onRenameDocument(doc.id)}
                     style={styles.actionBtn}>
                     <Text style={styles.renameText}>Rename</Text>
+                  </Pressable>
+                ) : null}
+                {onOrganizeDocument ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Organize ${doc.name} into a collection`}
+                    hitSlop={8}
+                    onPress={() => onOrganizeDocument(doc.id)}
+                    style={styles.actionBtn}>
+                    <Text style={styles.renameText}>Collection</Text>
+                  </Pressable>
+                ) : null}
+                {onToggleArchived ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      doc.archived ? `Restore ${doc.name} from archive` : `Archive ${doc.name}`
+                    }
+                    hitSlop={8}
+                    onPress={() => onToggleArchived(doc.id)}
+                    style={styles.actionBtn}>
+                    <Text style={styles.renameText}>{doc.archived ? 'Restore' : 'Archive'}</Text>
                   </Pressable>
                 ) : null}
                 {onRemoveDocument ? (
@@ -682,6 +812,9 @@ const styles = StyleSheet.create({
   },
   rowPinned: {
     borderColor: '#C4A574',
+  },
+  rowArchived: {
+    opacity: 0.82,
   },
   rowMain: {
     flex: 1,

@@ -23,6 +23,8 @@ Aado focuses on **reading comfort** first:
 - Library filters for unread, in-progress, finished, and annotated documents
 - One-tap reset for library search, sorting, and filters
 - Library sorting by recency, title, progress, and reading time
+- Custom collections for grouping and filtering related documents
+- Non-destructive document archiving with a dedicated archive view
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open
 

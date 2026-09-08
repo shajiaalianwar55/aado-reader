@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Share } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
+import { CollectionModal } from '@/src/components/CollectionModal';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
 import { TrashModal } from '@/src/components/TrashModal';
 import { pickPdfDocuments } from '@/src/lib/pickPdf';
@@ -17,6 +18,7 @@ export default function LibraryScreen() {
   const [busy, setBusy] = useState(false);
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
   const [renameId, setRenameId] = useState<string | null>(null);
+  const [collectionId, setCollectionId] = useState<string | null>(null);
   const [trash, setTrash] = useState<TrashedDocument[]>([]);
   const [trashVisible, setTrashVisible] = useState(false);
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
@@ -155,6 +157,16 @@ export default function LibraryScreen() {
     [documents, refresh],
   );
 
+  const onToggleArchived = useCallback(
+    async (id: string) => {
+      const doc = documents.find((item) => item.id === id);
+      if (!doc) return;
+      await updateDocument(id, { archived: !doc.archived });
+      await refresh();
+    },
+    [documents, refresh],
+  );
+
   const onRestartDocument = useCallback(
     (id: string) => {
       const doc = documents.find((d) => d.id === id);
@@ -239,7 +251,9 @@ export default function LibraryScreen() {
         onSelectDocument={openDocument}
         onRemoveDocument={onRemoveDocument}
         onRenameDocument={setRenameId}
+        onOrganizeDocument={setCollectionId}
         onTogglePin={onTogglePin}
+        onToggleArchived={onToggleArchived}
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}
         onShareInsights={onShareInsights}
@@ -251,6 +265,20 @@ export default function LibraryScreen() {
         initialName={renaming?.name ?? ''}
         onCancel={() => setRenameId(null)}
         onSave={onSaveRename}
+      />
+      <CollectionModal
+        visible={Boolean(collectionId)}
+        documentName={documents.find((document) => document.id === collectionId)?.name ?? ''}
+        initialCollection={
+          documents.find((document) => document.id === collectionId)?.collection ?? ''
+        }
+        onCancel={() => setCollectionId(null)}
+        onSave={async (collection) => {
+          if (!collectionId) return;
+          await updateDocument(collectionId, { collection: collection || undefined });
+          setCollectionId(null);
+          await refresh();
+        }}
       />
       <TrashModal
         visible={trashVisible}
