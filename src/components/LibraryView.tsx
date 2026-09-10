@@ -10,6 +10,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatReadingProgress } from '@/src/lib/readingProgress';
 import {
+  estimateRemainingReadingSeconds,
+  formatRemainingReadingTime,
+} from '@/src/lib/readingEstimate';
+import {
   getLocalDateKey,
   getReadingStreak,
   getRecentReadingDays,
@@ -210,6 +214,9 @@ export function LibraryView({
       .sort((a, b) => b.lastOpened - a.lastOpened);
     return unfinished[0] ?? null;
   }, [documents, emptyLibrary, query]);
+  const continueEstimate = continueDoc
+    ? formatRemainingReadingTime(estimateRemainingReadingSeconds(continueDoc))
+    : '';
 
   return (
     <ScrollView
@@ -259,6 +266,7 @@ export function LibraryView({
             {formatReadingProgress(continueDoc.lastPage, continueDoc.pageCount)
               ? ` · ${formatReadingProgress(continueDoc.lastPage, continueDoc.pageCount)}`
               : ''}
+            {continueEstimate ? ` · ${continueEstimate}` : ''}
           </Text>
         </Pressable>
       ) : null}
@@ -524,9 +532,13 @@ export function LibraryView({
                     {(() => {
                       const progress = formatReadingProgress(doc.lastPage, doc.pageCount);
                       const noteCount = getNoteCount(doc);
+                      const remaining = formatRemainingReadingTime(
+                        estimateRemainingReadingSeconds(doc),
+                      );
                       const details = [
                         doc.collection ? doc.collection : '',
                         doc.readingSeconds ? formatReadingTime(doc.readingSeconds) : '',
+                        remaining,
                         noteCount
                           ? `${noteCount} annotation${noteCount === 1 ? '' : 's'}`
                           : '',
