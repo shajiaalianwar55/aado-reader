@@ -45,6 +45,7 @@ export type ReaderSettings = {
   haptics: boolean;
   autoHideMs: number;
   dailyGoalMinutes: number;
+  focusSessionMinutes: number;
 };
 
 export type DailyReadingActivity = {

@@ -17,3 +17,12 @@ export async function lightImpactHaptic(enabled: boolean) {
     // ignore unsupported platforms
   }
 }
+
+export async function successHaptic(enabled: boolean) {
+  if (!enabled) return;
+  try {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  } catch {
+    // ignore unsupported platforms
+  }
+}

@@ -209,6 +209,25 @@ export default function SettingsScreen() {
       </View>
       <Text style={styles.goalHint}>Your progress and seven-day activity stay on this device.</Text>
 
+      <Text style={styles.section}>Focus session length</Text>
+      <View style={styles.row}>
+        {[10, 15, 25, 45].map((minutes) => {
+          const active = settings.focusSessionMinutes === minutes;
+          return (
+            <Pressable
+              key={minutes}
+              accessibilityRole="button"
+              accessibilityLabel={`Set focus session length to ${minutes} minutes`}
+              accessibilityState={{ selected: active }}
+              onPress={() => update({ focusSessionMinutes: minutes })}
+              style={[styles.chip, active && styles.chipActive]}>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{minutes} min</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={styles.goalHint}>Start, pause, and reset the timer from the reader controls.</Text>
+
       <Text style={styles.section}>Library</Text>
       <Pressable
         accessibilityRole="button"

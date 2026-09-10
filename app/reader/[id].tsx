@@ -8,6 +8,7 @@ import * as Sharing from 'expo-sharing';
 import { BookmarkBar } from '@/src/components/BookmarkBar';
 import { AnnotationPanel } from '@/src/components/AnnotationPanel';
 import { ChromeTapHint } from '@/src/components/ChromeTapHint';
+import { FocusTimer } from '@/src/components/FocusTimer';
 import { PageScrubber } from '@/src/components/PageScrubber';
 import { PageNotes } from '@/src/components/PageNotes';
 import { PdfViewer, type PdfViewerHandle } from '@/src/components/PdfViewer';
@@ -21,7 +22,7 @@ import { useReadingProgress } from '@/src/hooks/useReadingProgress';
 import { useReadingSession } from '@/src/hooks/useReadingSession';
 import { useReadingActivity } from '@/src/hooks/useReadingActivity';
 import { useReadingTime } from '@/src/hooks/useReadingTime';
-import { lightImpactHaptic, selectionHaptic } from '@/src/lib/haptics';
+import { lightImpactHaptic, selectionHaptic, successHaptic } from '@/src/lib/haptics';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
 import type { AnnotationColor, FitMode, LibraryDocument, PageAnnotation, ReadingThemeId, ScrollMode } from '@/src/types';
@@ -43,6 +44,7 @@ export default function ReaderScreen() {
   const [keepAwake, setKeepAwake] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [autoHideMs, setAutoHideMs] = useState(4000);
+  const [focusSessionMinutes, setFocusSessionMinutes] = useState(25);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [annotations, setAnnotations] = useState<PageAnnotation[]>([]);
   const [annotationsVisible, setAnnotationsVisible] = useState(false);
@@ -74,6 +76,7 @@ export default function ReaderScreen() {
         setKeepAwake(settings.keepAwake);
         setHapticsEnabled(settings.haptics ?? true);
         setAutoHideMs(settings.autoHideMs ?? 4000);
+        setFocusSessionMinutes(settings.focusSessionMinutes ?? 25);
       }
       const existing = await getDocument(params.id);
       if (cancelled) return;
@@ -421,6 +424,14 @@ export default function ReaderScreen() {
             onToggleFitMode={toggleFitMode}
             onZoomIn={() => viewerRef.current?.zoomIn()}
             onZoomOut={() => viewerRef.current?.zoomOut()}
+          />
+          <FocusTimer
+            durationMinutes={focusSessionMinutes}
+            theme={theme}
+            onComplete={() => {
+              void successHaptic(hapticsEnabled);
+              Alert.alert('Focus session complete', 'A quiet moment well spent.');
+            }}
           />
           <SearchBar
             theme={theme}

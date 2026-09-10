@@ -28,6 +28,7 @@ Aado focuses on **reading comfort** first:
 - Non-destructive document archiving with a dedicated archive view
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open
+- Configurable focus-session timer with pause, resume, and completion feedback
 
 ## Run locally
 
