@@ -5,12 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clearLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
 import { readingThemes } from '@/src/theme/readingThemes';
 import { defaultSettings } from '@/src/store/constants';
+import { pickBackup, restoreBackup, shareBackup } from '@/src/store/backupStore';
 import type { FitMode, ReaderSettings, ReadingThemeId, ScrollMode } from '@/src/types';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<ReaderSettings>(defaultSettings);
   const [loaded, setLoaded] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
 
   useEffect(() => {
     loadSettings().then((value) => {
@@ -44,6 +46,54 @@ export default function SettingsScreen() {
       ],
     );
   }, []);
+
+  const onExportBackup = useCallback(async () => {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    try {
+      await shareBackup();
+    } catch (error) {
+      Alert.alert('Could not export backup', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setBackupBusy(false);
+    }
+  }, [backupBusy]);
+
+  const onImportBackup = useCallback(async () => {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    try {
+      const backup = await pickBackup();
+      if (!backup) return;
+      Alert.alert(
+        'Restore this backup?',
+        `This replaces Aado’s local library data with ${backup.library.length} document${backup.library.length === 1 ? '' : 's'} from ${new Date(backup.exportedAt).toLocaleDateString()}. PDF files are not included.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Restore',
+            style: 'destructive',
+            onPress: async () => {
+              setBackupBusy(true);
+              try {
+                await restoreBackup(backup);
+                setSettings({ ...defaultSettings, ...backup.settings });
+                Alert.alert('Backup restored', 'Your library data and reading preferences were restored.');
+              } catch (error) {
+                Alert.alert('Could not restore backup', error instanceof Error ? error.message : 'Unknown error');
+              } finally {
+                setBackupBusy(false);
+              }
+            },
+          },
+        ],
+      );
+    } catch (error) {
+      Alert.alert('Could not read backup', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setBackupBusy(false);
+    }
+  }, [backupBusy]);
 
   if (!loaded) {
     return (
@@ -238,6 +288,31 @@ export default function SettingsScreen() {
       </Pressable>
       <Text style={styles.hint}>Does not delete PDF files from your device.</Text>
 
+      <Text style={styles.section}>Backup & restore</Text>
+      <View style={styles.backupRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Export Aado data backup"
+          accessibilityState={{ disabled: backupBusy }}
+          disabled={backupBusy}
+          onPress={onExportBackup}
+          style={[styles.backupBtn, backupBusy && styles.disabled]}>
+          <Text style={styles.backupText}>Export backup</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Restore Aado data backup"
+          accessibilityState={{ disabled: backupBusy }}
+          disabled={backupBusy}
+          onPress={onImportBackup}
+          style={[styles.backupBtn, backupBusy && styles.disabled]}>
+          <Text style={styles.backupText}>Restore backup</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.hint}>
+        Includes reading data and preferences, but not the PDF files themselves.
+      </Text>
+
       <Text style={styles.section}>About</Text>
       <View style={styles.aboutCard}>
         <Text style={styles.aboutTitle}>Aado Reader</Text>
@@ -360,6 +435,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -8,
     marginBottom: 20,
+  },
+  backupRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 8,
+  },
+  backupBtn: {
+    borderWidth: 1,
+    borderColor: '#C4A574',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backupText: {
+    color: '#C4A574',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  disabled: {
+    opacity: 0.5,
   },
   aboutCard: {
     borderWidth: 1,
