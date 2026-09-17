@@ -36,6 +36,7 @@ type LibraryScreenProps = {
     readingByDay?: Record<string, number>;
     collection?: string;
     archived?: boolean;
+    rating?: number;
   }>;
   dailyGoalMinutes?: number;
   onOpenDocument?: () => void;
@@ -43,6 +44,7 @@ type LibraryScreenProps = {
   onRemoveDocument?: (id: string) => void;
   onRenameDocument?: (id: string) => void;
   onOrganizeDocument?: (id: string) => void;
+  onRateDocument?: (id: string) => void;
   onTogglePin?: (id: string) => void;
   onToggleArchived?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
@@ -57,6 +59,7 @@ const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
   { id: 'name', label: 'Name' },
   { id: 'progress', label: 'Progress' },
   { id: 'readingTime', label: 'Time read' },
+  { id: 'rating', label: 'Rating' },
 ];
 
 type ReadingStatusFilter = 'all' | 'unread' | 'reading' | 'finished';
@@ -102,6 +105,7 @@ export function LibraryView({
   onRemoveDocument,
   onRenameDocument,
   onOrganizeDocument,
+  onRateDocument,
   onTogglePin,
   onToggleArchived,
   onRestartDocument,
@@ -116,6 +120,7 @@ export function LibraryView({
   const [statusFilter, setStatusFilter] = useState<ReadingStatusFilter>('all');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
+  const [ratedOnly, setRatedOnly] = useState(false);
   const [collectionFilter, setCollectionFilter] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
   const collections = useMemo(
@@ -136,6 +141,7 @@ export function LibraryView({
     statusFilter !== 'all' ||
     pinnedOnly ||
     notesOnly ||
+    ratedOnly ||
     collectionFilter !== 'all' ||
     showArchived;
   const emptyLibrary = documents.length === 0;
@@ -169,6 +175,7 @@ export function LibraryView({
     }
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
     if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
+    if (ratedOnly) base = base.filter((doc) => Boolean(doc.rating));
     if (statusFilter === 'unread') {
       base = base.filter((doc) => !doc.finished && doc.lastPage <= 1);
     } else if (statusFilter === 'reading') {
@@ -194,6 +201,7 @@ export function LibraryView({
     notesOnly,
     pinnedOnly,
     query,
+    ratedOnly,
     showArchived,
     sortMode,
     statusFilter,
@@ -386,6 +394,16 @@ export function LibraryView({
                 Annotated
               </Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={ratedOnly ? 'Include unrated documents' : 'Show rated documents only'}
+              accessibilityState={{ selected: ratedOnly }}
+              onPress={() => setRatedOnly((value) => !value)}
+              style={[styles.sortChip, ratedOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, ratedOnly && styles.sortChipTextActive]}>
+                Rated
+              </Text>
+            </Pressable>
           </View>
           <Text style={styles.filterLabel}>Reading status</Text>
           <View style={styles.sortRow}>
@@ -479,6 +497,7 @@ export function LibraryView({
                 setStatusFilter('all');
                 setPinnedOnly(false);
                 setNotesOnly(false);
+                setRatedOnly(false);
                 setCollectionFilter('all');
                 setShowArchived(false);
               }}
@@ -501,6 +520,7 @@ export function LibraryView({
                 ? `No documents match “${query.trim()}”.`
                 : pinnedOnly ||
                     notesOnly ||
+                    ratedOnly ||
                     statusFilter !== 'all' ||
                     collectionFilter !== 'all' ||
                     showArchived
@@ -537,6 +557,7 @@ export function LibraryView({
                       );
                       const details = [
                         doc.collection ? doc.collection : '',
+                        doc.rating ? `${'★'.repeat(doc.rating)} rating` : '',
                         doc.readingSeconds ? formatReadingTime(doc.readingSeconds) : '',
                         remaining,
                         noteCount
@@ -607,6 +628,16 @@ export function LibraryView({
                     onPress={() => onOrganizeDocument(doc.id)}
                     style={styles.actionBtn}>
                     <Text style={styles.renameText}>Collection</Text>
+                  </Pressable>
+                ) : null}
+                {onRateDocument ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Rate ${doc.name}`}
+                    hitSlop={8}
+                    onPress={() => onRateDocument(doc.id)}
+                    style={styles.actionBtn}>
+                    <Text style={styles.renameText}>{doc.rating ? `${doc.rating}★` : 'Rate'}</Text>
                   </Pressable>
                 ) : null}
                 {onToggleArchived ? (

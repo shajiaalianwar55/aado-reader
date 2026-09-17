@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { LibraryView } from '@/src/components/LibraryView';
 import { CollectionModal } from '@/src/components/CollectionModal';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
+import { RatingModal } from '@/src/components/RatingModal';
 import { TrashModal } from '@/src/components/TrashModal';
 import { pickPdfDocuments } from '@/src/lib/pickPdf';
 import { getLocalDateKey, getReadingStreak } from '@/src/lib/readingActivity';
@@ -19,6 +20,7 @@ export default function LibraryScreen() {
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [collectionId, setCollectionId] = useState<string | null>(null);
+  const [ratingId, setRatingId] = useState<string | null>(null);
   const [trash, setTrash] = useState<TrashedDocument[]>([]);
   const [trashVisible, setTrashVisible] = useState(false);
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
@@ -252,6 +254,7 @@ export default function LibraryScreen() {
         onRemoveDocument={onRemoveDocument}
         onRenameDocument={setRenameId}
         onOrganizeDocument={setCollectionId}
+        onRateDocument={setRatingId}
         onTogglePin={onTogglePin}
         onToggleArchived={onToggleArchived}
         onRestartDocument={onRestartDocument}
@@ -277,6 +280,18 @@ export default function LibraryScreen() {
           if (!collectionId) return;
           await updateDocument(collectionId, { collection: collection || undefined });
           setCollectionId(null);
+          await refresh();
+        }}
+      />
+      <RatingModal
+        visible={Boolean(ratingId)}
+        documentName={documents.find((document) => document.id === ratingId)?.name ?? ''}
+        rating={documents.find((document) => document.id === ratingId)?.rating}
+        onCancel={() => setRatingId(null)}
+        onSave={async (rating) => {
+          if (!ratingId) return;
+          await updateDocument(ratingId, { rating });
+          setRatingId(null);
           await refresh();
         }}
       />

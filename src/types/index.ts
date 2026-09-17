@@ -1,6 +1,7 @@
 export type FitMode = 'width' | 'page';
 export type ScrollMode = 'vertical' | 'paged';
 export type ReadingThemeId = 'day' | 'sepia' | 'night';
+export type DocumentRating = 1 | 2 | 3 | 4 | 5;
 export type AnnotationColor = 'gold' | 'rose' | 'mint';
 
 export type PageAnnotation = {
@@ -26,6 +27,7 @@ export type LibraryDocument = {
   readingByDay?: Record<string, number>;
   collection?: string;
   archived?: boolean;
+  rating?: DocumentRating;
   pinned?: boolean;
   finished?: boolean;
 };
@@ -34,7 +36,7 @@ export type TrashedDocument = LibraryDocument & {
   deletedAt: number;
 };
 
-export type LibrarySortMode = 'recent' | 'name' | 'progress' | 'readingTime';
+export type LibrarySortMode = 'recent' | 'name' | 'progress' | 'readingTime' | 'rating';
 
 export type ReaderSettings = {
   theme: ReadingThemeId;
