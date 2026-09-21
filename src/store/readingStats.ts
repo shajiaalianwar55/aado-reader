@@ -66,3 +66,57 @@ export function calculateStreak(stats: ReadingStats, today = new Date()): number
   }
   return streak;
 }
+
+function recentDateKeys(days: number, today = new Date()): Set<string> {
+  return new Set(
+    Array.from({ length: Math.max(0, days) }, (_, offset) => {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      date.setDate(date.getDate() - offset);
+      return localDateKey(date);
+    }),
+  );
+}
+
+export function calculateRecentReadingMinutes(
+  stats: ReadingStats,
+  days = 30,
+  today = new Date(),
+): number {
+  const includedDates = recentDateKeys(days, today);
+  const seconds = stats.days
+    .filter((day) => includedDates.has(day.date))
+    .reduce((total, day) => total + Math.max(0, day.seconds), 0);
+  return Math.round(seconds / 60);
+}
+
+export function calculateGoalDays(
+  stats: ReadingStats,
+  days = 30,
+  today = new Date(),
+): number {
+  const includedDates = recentDateKeys(days, today);
+  const goalSeconds = stats.dailyGoalMinutes * 60;
+  return stats.days.filter(
+    (day) => includedDates.has(day.date) && day.seconds >= goalSeconds,
+  ).length;
+}
+
+export function calculateLongestStreak(stats: ReadingStats): number {
+  const activeDates = [...new Set(
+    stats.days.filter((day) => day.seconds > 0).map((day) => day.date),
+  )].sort();
+  let longest = 0;
+  let current = 0;
+  let previous = '';
+
+  activeDates.forEach((dateKey) => {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() - 1);
+    current = previous === localDateKey(date) ? current + 1 : 1;
+    longest = Math.max(longest, current);
+    previous = dateKey;
+  });
+
+  return longest;
+}
