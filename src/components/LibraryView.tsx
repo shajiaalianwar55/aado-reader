@@ -59,6 +59,7 @@ const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
   { id: 'name', label: 'Name' },
   { id: 'progress', label: 'Progress' },
   { id: 'readingTime', label: 'Time read' },
+  { id: 'timeLeft', label: 'Time left' },
   { id: 'rating', label: 'Rating' },
 ];
 
@@ -121,6 +122,7 @@ export function LibraryView({
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
   const [ratedOnly, setRatedOnly] = useState(false);
+  const [shortReadsOnly, setShortReadsOnly] = useState(false);
   const [collectionFilter, setCollectionFilter] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
   const collections = useMemo(
@@ -142,6 +144,7 @@ export function LibraryView({
     pinnedOnly ||
     notesOnly ||
     ratedOnly ||
+    shortReadsOnly ||
     collectionFilter !== 'all' ||
     showArchived;
   const emptyLibrary = documents.length === 0;
@@ -176,6 +179,12 @@ export function LibraryView({
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
     if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
     if (ratedOnly) base = base.filter((doc) => Boolean(doc.rating));
+    if (shortReadsOnly) {
+      base = base.filter((doc) => {
+        const remaining = estimateRemainingReadingSeconds(doc);
+        return remaining != null && remaining <= 30 * 60;
+      });
+    }
     if (statusFilter === 'unread') {
       base = base.filter((doc) => !doc.finished && doc.lastPage <= 1);
     } else if (statusFilter === 'reading') {
@@ -203,6 +212,7 @@ export function LibraryView({
     query,
     ratedOnly,
     showArchived,
+    shortReadsOnly,
     sortMode,
     statusFilter,
   ]);
@@ -404,6 +414,16 @@ export function LibraryView({
                 Rated
               </Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={shortReadsOnly ? 'Include longer documents' : 'Show documents with 30 minutes or less remaining'}
+              accessibilityState={{ selected: shortReadsOnly }}
+              onPress={() => setShortReadsOnly((value) => !value)}
+              style={[styles.sortChip, shortReadsOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, shortReadsOnly && styles.sortChipTextActive]}>
+                Under 30m
+              </Text>
+            </Pressable>
           </View>
           <Text style={styles.filterLabel}>Reading status</Text>
           <View style={styles.sortRow}>
@@ -498,6 +518,7 @@ export function LibraryView({
                 setPinnedOnly(false);
                 setNotesOnly(false);
                 setRatedOnly(false);
+                setShortReadsOnly(false);
                 setCollectionFilter('all');
                 setShowArchived(false);
               }}
@@ -521,6 +542,7 @@ export function LibraryView({
                 : pinnedOnly ||
                     notesOnly ||
                     ratedOnly ||
+                    shortReadsOnly ||
                     statusFilter !== 'all' ||
                     collectionFilter !== 'all' ||
                     showArchived

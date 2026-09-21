@@ -1,5 +1,6 @@
 import type { LibraryDocument, ReaderSettings } from '@/src/types';
 import { defaultReadingTheme } from '@/src/theme/readingThemes';
+import { estimateRemainingReadingSeconds } from '@/src/lib/readingEstimate';
 
 export const STORAGE_KEYS = {
   library: '@aado/library',
@@ -41,6 +42,7 @@ export function sortLibraryByMode<
     pageCount: number;
     readingSeconds?: number;
     rating?: number;
+    finished?: boolean;
     pinned?: boolean;
   },
 >(docs: T[], mode: import('@/src/types').LibrarySortMode): T[] {
@@ -60,6 +62,14 @@ export function sortLibraryByMode<
     }
     if (mode === 'rating') {
       return (b.rating ?? 0) - (a.rating ?? 0) || b.lastOpened - a.lastOpened;
+    }
+    if (mode === 'timeLeft') {
+      const aRemaining = estimateRemainingReadingSeconds(a);
+      const bRemaining = estimateRemainingReadingSeconds(b);
+      if (aRemaining == null && bRemaining == null) return b.lastOpened - a.lastOpened;
+      if (aRemaining == null) return 1;
+      if (bRemaining == null) return -1;
+      return aRemaining - bRemaining;
     }
     return b.lastOpened - a.lastOpened;
   });
