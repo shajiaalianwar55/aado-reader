@@ -24,6 +24,7 @@ import { useReadingActivity } from '@/src/hooks/useReadingActivity';
 import { useReadingTime } from '@/src/hooks/useReadingTime';
 import { lightImpactHaptic, selectionHaptic, successHaptic } from '@/src/lib/haptics';
 import { getDocument, loadSettings, saveSettings, updateDocument, upsertDocument } from '@/src/store/libraryStore';
+import { recordFocusSession } from '@/src/store/readingStats';
 import { readingThemes } from '@/src/theme/readingThemes';
 import type { AnnotationColor, FitMode, LibraryDocument, PageAnnotation, ReadingThemeId, ScrollMode } from '@/src/types';
 
@@ -429,6 +430,7 @@ export default function ReaderScreen() {
             durationMinutes={focusSessionMinutes}
             theme={theme}
             onComplete={() => {
+              void recordFocusSession().catch(() => undefined);
               void successHaptic(hapticsEnabled);
               Alert.alert('Focus session complete', 'A quiet moment well spent.');
             }}

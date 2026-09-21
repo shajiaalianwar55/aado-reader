@@ -44,6 +44,18 @@ export async function recordReadingSession(
   await AsyncStorage.setItem(STORAGE_KEYS.readingStats, JSON.stringify({ ...stats, days }));
 }
 
+export async function recordFocusSession(): Promise<void> {
+  const stats = await loadReadingStats();
+  const date = localDateKey();
+  const existing = stats.days.find((day) => day.date === date);
+  const day = existing ?? { date, seconds: 0, pages: 0, documentIds: [] };
+  day.focusSessions = (day.focusSessions ?? 0) + 1;
+  const days = [...stats.days.filter((item) => item.date !== date), day]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 365);
+  await AsyncStorage.setItem(STORAGE_KEYS.readingStats, JSON.stringify({ ...stats, days }));
+}
+
 export async function setDailyReadingGoal(dailyGoalMinutes: number): Promise<void> {
   const stats = await loadReadingStats();
   await AsyncStorage.setItem(
@@ -99,6 +111,17 @@ export function calculateGoalDays(
   return stats.days.filter(
     (day) => includedDates.has(day.date) && day.seconds >= goalSeconds,
   ).length;
+}
+
+export function calculateRecentFocusSessions(
+  stats: ReadingStats,
+  days = 7,
+  today = new Date(),
+): number {
+  const includedDates = recentDateKeys(days, today);
+  return stats.days
+    .filter((day) => includedDates.has(day.date))
+    .reduce((total, day) => total + (day.focusSessions ?? 0), 0);
 }
 
 export function calculateLongestStreak(stats: ReadingStats): number {

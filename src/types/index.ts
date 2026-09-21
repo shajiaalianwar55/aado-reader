@@ -61,6 +61,7 @@ export type DailyReadingActivity = {
   seconds: number;
   pages: number;
   documentIds: string[];
+  focusSessions?: number;
 };
 
 export type ReadingStats = {

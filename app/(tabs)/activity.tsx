@@ -6,6 +6,7 @@ import { loadLibrary, loadSettings, saveSettings } from '@/src/store/libraryStor
 import {
   calculateGoalDays,
   calculateLongestStreak,
+  calculateRecentFocusSessions,
   calculateRecentReadingMinutes,
   calculateStreak,
   loadReadingStats,
@@ -49,6 +50,7 @@ export default function ActivityScreen() {
   const recentMinutes = calculateRecentReadingMinutes(stats);
   const goalDays = calculateGoalDays(stats);
   const longestStreak = calculateLongestStreak(stats);
+  const recentFocusSessions = calculateRecentFocusSessions(stats);
 
   const updateGoal = async (goal: number) => {
     const settings = await loadSettings();
@@ -102,6 +104,12 @@ export default function ActivityScreen() {
         <Metric label="Goal days" value={`${goalDays}`} />
       </View>
 
+      <Text style={styles.section}>FOCUS SESSIONS</Text>
+      <View style={styles.focusMetrics}>
+        <Metric label="Completed today" value={`${today?.focusSessions ?? 0}`} />
+        <Metric label="Last 7 days" value={`${recentFocusSessions}`} />
+      </View>
+
       <Text style={styles.section}>DAILY GOAL</Text>
       <View style={styles.goals}>
         {[10, 20, 30, 45].map((goal) => {
@@ -145,6 +153,7 @@ const styles = StyleSheet.create({
   fill: { height: '100%', backgroundColor: '#C4A574' },
   metrics: { flexDirection: 'row', gap: 10, marginTop: 12 },
   insights: { flexDirection: 'row', gap: 10 },
+  focusMetrics: { flexDirection: 'row', gap: 10 },
   metric: { flex: 1, backgroundColor: '#141A22', borderRadius: 12, padding: 12, alignItems: 'center' },
   metricValue: { color: '#F4F1EA', fontSize: 22, fontWeight: '700' },
   metricLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 3, textAlign: 'center' },

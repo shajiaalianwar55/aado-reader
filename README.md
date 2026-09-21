@@ -32,6 +32,7 @@ Aado focuses on **reading comfort** first:
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open
 - Configurable focus-session timer with pause, resume, and completion feedback
+- Persistent completed focus-session totals for today and the last seven days
 - Exportable and restorable JSON backups for reading data and preferences
 
 ## Run locally
