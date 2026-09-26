@@ -9,6 +9,7 @@ export type PageAnnotation = {
   page: number;
   note: string;
   color: AnnotationColor;
+  starred?: boolean;
   createdAt: number;
   updatedAt: number;
 };

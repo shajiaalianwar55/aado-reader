@@ -17,16 +17,22 @@ type Props = {
   onClose: () => void;
   onSave: (note: string, color: AnnotationColor) => void;
   onDelete: (id: string) => void;
+  onToggleStar: (id: string) => void;
   onJump: (page: number) => void;
   onShare: () => void;
 };
 
 export function AnnotationPanel({
-  visible, page, annotations, theme, onClose, onSave, onDelete, onJump, onShare,
+  visible, page, annotations, theme, onClose, onSave, onDelete, onToggleStar, onJump, onShare,
 }: Props) {
   const current = annotations.find((item) => item.page === page);
   const [note, setNote] = useState('');
   const [color, setColor] = useState<AnnotationColor>('gold');
+  const [starredOnly, setStarredOnly] = useState(false);
+  const starredCount = annotations.filter((item) => item.starred).length;
+  const visibleAnnotations = starredOnly
+    ? annotations.filter((item) => item.starred)
+    : annotations;
 
   useEffect(() => {
     if (!visible) return;
@@ -44,6 +50,18 @@ export function AnnotationPanel({
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>Page {page}</Text>
             </View>
             <View style={styles.headerActions}>
+              {annotations.length ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={starredOnly ? 'Show all annotations' : 'Show starred annotations only'}
+                  accessibilityState={{ selected: starredOnly }}
+                  onPress={() => setStarredOnly((value) => !value)}
+                  style={[styles.filterButton, starredOnly && { backgroundColor: theme.accent }]}>
+                  <Text style={{ color: starredOnly ? theme.background : theme.accent }}>
+                    Starred ({starredCount})
+                  </Text>
+                </Pressable>
+              ) : null}
               {annotations.length ? (
                 <Pressable
                   accessibilityRole="button"
@@ -89,9 +107,11 @@ export function AnnotationPanel({
             </Pressable>
           </View>
           <ScrollView style={styles.list}>
-            {annotations.length === 0 ? (
-              <Text style={[styles.empty, { color: theme.textMuted }]}>No annotations yet.</Text>
-            ) : annotations.map((item) => (
+            {visibleAnnotations.length === 0 ? (
+              <Text style={[styles.empty, { color: theme.textMuted }]}>
+                {starredOnly ? 'No starred annotations yet.' : 'No annotations yet.'}
+              </Text>
+            ) : visibleAnnotations.map((item) => (
               <View key={item.id} style={[styles.item, { borderColor: theme.border }]}>
                 <Pressable onPress={() => onJump(item.page)} style={styles.itemMain}>
                   <View style={[styles.dot, { backgroundColor: COLORS.find((c) => c.id === item.color)?.value }]} />
@@ -102,9 +122,19 @@ export function AnnotationPanel({
                     </Text>
                   </View>
                 </Pressable>
-                <Pressable accessibilityRole="button" onPress={() => onDelete(item.id)}>
-                  <Text style={{ color: theme.textMuted }}>Delete</Text>
-                </Pressable>
+                <View style={styles.itemActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={item.starred ? `Unstar annotation on page ${item.page}` : `Star annotation on page ${item.page}`}
+                    onPress={() => onToggleStar(item.id)}>
+                    <Text style={{ color: item.starred ? theme.accent : theme.textMuted }}>
+                      {item.starred ? 'Starred' : 'Star'}
+                    </Text>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" onPress={() => onDelete(item.id)}>
+                    <Text style={{ color: theme.textMuted }}>Delete</Text>
+                  </Pressable>
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -122,6 +152,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { marginTop: 3 },
   button: { padding: 8 },
+  filterButton: { paddingHorizontal: 9, paddingVertical: 7, borderRadius: 8 },
   input: { minHeight: 100, borderWidth: 1, borderRadius: 12, padding: 12, textAlignVertical: 'top' },
   colors: { flexDirection: 'row', gap: 10, alignItems: 'center', marginVertical: 14 },
   color: { width: 30, height: 30, borderRadius: 15 },
@@ -134,6 +165,7 @@ const styles = StyleSheet.create({
   itemMain: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   dot: { width: 10, height: 34, borderRadius: 5, marginRight: 10 },
   itemCopy: { flex: 1 },
+  itemActions: { alignItems: 'flex-end', gap: 10, marginLeft: 8 },
   page: { fontSize: 12, fontWeight: '700', marginBottom: 3 },
   note: { fontSize: 14 },
 });

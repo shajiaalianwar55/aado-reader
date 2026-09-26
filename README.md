@@ -16,6 +16,7 @@ Aado focuses on **reading comfort** first:
 - Shareable page-note summaries
 - Library search and filtering across notes and colored highlights
 - Shareable colored-annotation summaries with page references
+- Starred key annotations with focused review and library-level counts
 - Local reading-time, completion, and note insights with sharing
 - Per-document reading-time and note totals
 - Personalized time-left estimates based on observed reading pace

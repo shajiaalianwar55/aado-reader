@@ -34,7 +34,7 @@ type LibraryScreenProps = {
     targetDate?: number;
     finished?: boolean;
     notes?: Record<string, string>;
-    annotations?: Array<{ note: string }>;
+    annotations?: Array<{ note: string; starred?: boolean }>;
     readingSeconds?: number;
     readingByDay?: Record<string, number>;
     collection?: string;
@@ -102,6 +102,12 @@ function getNoteCount(document: {
   annotations?: Array<{ note: string }>;
 }): number {
   return Object.keys(document.notes ?? {}).length + (document.annotations?.length ?? 0);
+}
+
+function getStarredCount(document: {
+  annotations?: Array<{ starred?: boolean }>;
+}): number {
+  return document.annotations?.filter((annotation) => annotation.starred).length ?? 0;
 }
 
 export function LibraryView({
@@ -635,6 +641,7 @@ export function LibraryView({
                     {(() => {
                       const progress = formatReadingProgress(doc.lastPage, doc.pageCount);
                       const noteCount = getNoteCount(doc);
+                      const starredCount = getStarredCount(doc);
                       const remaining = formatRemainingReadingTime(
                         estimateRemainingReadingSeconds(doc),
                       );
@@ -648,6 +655,9 @@ export function LibraryView({
                         remaining,
                         noteCount
                           ? `${noteCount} annotation${noteCount === 1 ? '' : 's'}`
+                          : '',
+                        starredCount
+                          ? `${starredCount} starred`
                           : '',
                       ].filter(Boolean);
                       return `${doc.finished ? 'Finished · ' : ''}Page ${doc.lastPage}${

@@ -217,6 +217,7 @@ export default function ReaderScreen() {
         page,
         note,
         color,
+        starred: current?.starred,
         createdAt: current?.createdAt ?? now,
         updatedAt: now,
       },
@@ -228,6 +229,14 @@ export default function ReaderScreen() {
 
   const deleteAnnotation = useCallback(async (id: string) => {
     const next = annotations.filter((item) => item.id !== id);
+    setAnnotations(next);
+    await updateDocument(params.id, { annotations: next });
+  }, [annotations, params.id]);
+
+  const toggleAnnotationStar = useCallback(async (id: string) => {
+    const next = annotations.map((item) =>
+      item.id === id ? { ...item, starred: !item.starred, updatedAt: Date.now() } : item,
+    );
     setAnnotations(next);
     await updateDocument(params.id, { annotations: next });
   }, [annotations, params.id]);
@@ -372,7 +381,11 @@ export default function ReaderScreen() {
             onPress={() => setAnnotationsVisible(true)}
             hitSlop={8}
             style={styles.shareBtn}>
-            <Text style={[styles.shareText, { color: theme.accent }]}>Notes ({annotations.length})</Text>
+            <Text style={[styles.shareText, { color: theme.accent }]}>
+              Notes ({annotations.length}{annotations.some((item) => item.starred)
+                ? ` · ${annotations.filter((item) => item.starred).length} starred`
+                : ''})
+            </Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -529,6 +542,7 @@ export default function ReaderScreen() {
         onClose={() => setAnnotationsVisible(false)}
         onSave={saveAnnotation}
         onDelete={deleteAnnotation}
+        onToggleStar={toggleAnnotationStar}
         onShare={onShareAnnotations}
         onJump={(target) => {
           setAnnotationsVisible(false);
