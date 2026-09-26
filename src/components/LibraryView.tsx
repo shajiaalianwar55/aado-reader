@@ -29,6 +29,7 @@ type LibraryScreenProps = {
     lastPage: number;
     pageCount: number;
     pinned?: boolean;
+    queuedAt?: number;
     finished?: boolean;
     notes?: Record<string, string>;
     annotations?: Array<{ note: string }>;
@@ -46,6 +47,7 @@ type LibraryScreenProps = {
   onOrganizeDocument?: (id: string) => void;
   onRateDocument?: (id: string) => void;
   onTogglePin?: (id: string) => void;
+  onToggleQueue?: (id: string) => void;
   onToggleArchived?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
   onToggleFinished?: (id: string) => void;
@@ -60,6 +62,7 @@ const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
   { id: 'progress', label: 'Progress' },
   { id: 'readingTime', label: 'Time read' },
   { id: 'timeLeft', label: 'Time left' },
+  { id: 'queue', label: 'Queue' },
   { id: 'rating', label: 'Rating' },
 ];
 
@@ -108,6 +111,7 @@ export function LibraryView({
   onOrganizeDocument,
   onRateDocument,
   onTogglePin,
+  onToggleQueue,
   onToggleArchived,
   onRestartDocument,
   onToggleFinished,
@@ -120,6 +124,7 @@ export function LibraryView({
   const [sortMode, setSortMode] = useState<LibrarySortMode>('recent');
   const [statusFilter, setStatusFilter] = useState<ReadingStatusFilter>('all');
   const [pinnedOnly, setPinnedOnly] = useState(false);
+  const [queuedOnly, setQueuedOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
   const [ratedOnly, setRatedOnly] = useState(false);
   const [shortReadsOnly, setShortReadsOnly] = useState(false);
@@ -142,6 +147,7 @@ export function LibraryView({
     sortMode !== 'recent' ||
     statusFilter !== 'all' ||
     pinnedOnly ||
+    queuedOnly ||
     notesOnly ||
     ratedOnly ||
     shortReadsOnly ||
@@ -177,6 +183,7 @@ export function LibraryView({
       base = base.filter((doc) => doc.collection === collectionFilter);
     }
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
+    if (queuedOnly) base = base.filter((doc) => doc.queuedAt != null);
     if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
     if (ratedOnly) base = base.filter((doc) => Boolean(doc.rating));
     if (shortReadsOnly) {
@@ -209,6 +216,7 @@ export function LibraryView({
     documents,
     notesOnly,
     pinnedOnly,
+    queuedOnly,
     query,
     ratedOnly,
     showArchived,
@@ -235,6 +243,13 @@ export function LibraryView({
   const continueEstimate = continueDoc
     ? formatRemainingReadingTime(estimateRemainingReadingSeconds(continueDoc))
     : '';
+  const nextQueuedDoc = useMemo(
+    () =>
+      documents
+        .filter((document) => !document.archived && !document.finished && document.queuedAt != null)
+        .sort((a, b) => (a.queuedAt ?? 0) - (b.queuedAt ?? 0))[0] ?? null,
+    [documents],
+  );
 
   return (
     <ScrollView
@@ -265,6 +280,20 @@ export function LibraryView({
           onPress={onOpenTrash}
           style={styles.trashButton}>
           <Text style={styles.trashButtonText}>Recently deleted ({trashCount})</Text>
+        </Pressable>
+      ) : null}
+
+      {nextQueuedDoc ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open next queued document ${nextQueuedDoc.name}`}
+          onPress={() => onSelectDocument?.(nextQueuedDoc.id)}
+          style={({ pressed }) => [styles.queueCard, pressed && styles.pressed]}>
+          <Text style={styles.continueEyebrow}>Up next</Text>
+          <Text style={styles.continueTitle} numberOfLines={2}>{nextQueuedDoc.name}</Text>
+          <Text style={styles.continueMeta}>
+            Page {nextQueuedDoc.lastPage}{nextQueuedDoc.pageCount > 0 ? ` of ${nextQueuedDoc.pageCount}` : ''}
+          </Text>
         </Pressable>
       ) : null}
 
@@ -406,6 +435,16 @@ export function LibraryView({
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={queuedOnly ? 'Include documents outside the reading queue' : 'Show reading queue only'}
+              accessibilityState={{ selected: queuedOnly }}
+              onPress={() => setQueuedOnly((value) => !value)}
+              style={[styles.sortChip, queuedOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, queuedOnly && styles.sortChipTextActive]}>
+                Up next
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel={ratedOnly ? 'Include unrated documents' : 'Show rated documents only'}
               accessibilityState={{ selected: ratedOnly }}
               onPress={() => setRatedOnly((value) => !value)}
@@ -516,6 +555,7 @@ export function LibraryView({
                 setSortMode('recent');
                 setStatusFilter('all');
                 setPinnedOnly(false);
+                setQueuedOnly(false);
                 setNotesOnly(false);
                 setRatedOnly(false);
                 setShortReadsOnly(false);
@@ -540,6 +580,7 @@ export function LibraryView({
               : query.trim()
                 ? `No documents match “${query.trim()}”.`
                 : pinnedOnly ||
+                    queuedOnly ||
                     notesOnly ||
                     ratedOnly ||
                     shortReadsOnly ||
@@ -580,6 +621,7 @@ export function LibraryView({
                       const details = [
                         doc.collection ? doc.collection : '',
                         doc.rating ? `${'★'.repeat(doc.rating)} rating` : '',
+                        doc.queuedAt ? 'Up next' : '',
                         doc.readingSeconds ? formatReadingTime(doc.readingSeconds) : '',
                         remaining,
                         noteCount
@@ -640,6 +682,18 @@ export function LibraryView({
                     onPress={() => onRenameDocument(doc.id)}
                     style={styles.actionBtn}>
                     <Text style={styles.renameText}>Rename</Text>
+                  </Pressable>
+                ) : null}
+                {onToggleQueue ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={doc.queuedAt ? `Remove ${doc.name} from reading queue` : `Add ${doc.name} to reading queue`}
+                    hitSlop={8}
+                    onPress={() => onToggleQueue(doc.id)}
+                    style={[styles.actionBtn, doc.queuedAt != null && styles.pinActive]}>
+                    <Text style={[styles.actionText, doc.queuedAt != null && styles.pinActiveText]}>
+                      {doc.queuedAt ? 'Unqueue' : 'Queue'}
+                    </Text>
                   </Pressable>
                 ) : null}
                 {onOrganizeDocument ? (
@@ -877,6 +931,15 @@ const styles = StyleSheet.create({
   },
   rowPinned: {
     borderColor: '#C4A574',
+  },
+  queueCard: {
+    borderWidth: 1,
+    borderColor: '#70BFA1',
+    backgroundColor: '#16231F',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 4,
   },
   rowArchived: {
     opacity: 0.82,

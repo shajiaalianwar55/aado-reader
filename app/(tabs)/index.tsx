@@ -159,6 +159,16 @@ export default function LibraryScreen() {
     [documents, refresh],
   );
 
+  const onToggleQueue = useCallback(
+    async (id: string) => {
+      const doc = documents.find((item) => item.id === id);
+      if (!doc) return;
+      await updateDocument(id, { queuedAt: doc.queuedAt ? undefined : Date.now() });
+      await refresh();
+    },
+    [documents, refresh],
+  );
+
   const onToggleArchived = useCallback(
     async (id: string) => {
       const doc = documents.find((item) => item.id === id);
@@ -256,6 +266,7 @@ export default function LibraryScreen() {
         onOrganizeDocument={setCollectionId}
         onRateDocument={setRatingId}
         onTogglePin={onTogglePin}
+        onToggleQueue={onToggleQueue}
         onToggleArchived={onToggleArchived}
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}

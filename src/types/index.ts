@@ -29,6 +29,7 @@ export type LibraryDocument = {
   archived?: boolean;
   rating?: DocumentRating;
   pinned?: boolean;
+  queuedAt?: number;
   finished?: boolean;
 };
 
@@ -42,6 +43,7 @@ export type LibrarySortMode =
   | 'progress'
   | 'readingTime'
   | 'timeLeft'
+  | 'queue'
   | 'rating';
 
 export type ReaderSettings = {
