@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatReadingProgress } from '@/src/lib/readingProgress';
+import { getReadingPlan } from '@/src/lib/readingPlan';
 import {
   estimateRemainingReadingSeconds,
   formatRemainingReadingTime,
@@ -30,6 +31,7 @@ type LibraryScreenProps = {
     pageCount: number;
     pinned?: boolean;
     queuedAt?: number;
+    targetDate?: number;
     finished?: boolean;
     notes?: Record<string, string>;
     annotations?: Array<{ note: string }>;
@@ -48,6 +50,7 @@ type LibraryScreenProps = {
   onRateDocument?: (id: string) => void;
   onTogglePin?: (id: string) => void;
   onToggleQueue?: (id: string) => void;
+  onPlanDocument?: (id: string) => void;
   onToggleArchived?: (id: string) => void;
   onRestartDocument?: (id: string) => void;
   onToggleFinished?: (id: string) => void;
@@ -112,6 +115,7 @@ export function LibraryView({
   onRateDocument,
   onTogglePin,
   onToggleQueue,
+  onPlanDocument,
   onToggleArchived,
   onRestartDocument,
   onToggleFinished,
@@ -125,6 +129,7 @@ export function LibraryView({
   const [statusFilter, setStatusFilter] = useState<ReadingStatusFilter>('all');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [queuedOnly, setQueuedOnly] = useState(false);
+  const [plannedOnly, setPlannedOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
   const [ratedOnly, setRatedOnly] = useState(false);
   const [shortReadsOnly, setShortReadsOnly] = useState(false);
@@ -148,6 +153,7 @@ export function LibraryView({
     statusFilter !== 'all' ||
     pinnedOnly ||
     queuedOnly ||
+    plannedOnly ||
     notesOnly ||
     ratedOnly ||
     shortReadsOnly ||
@@ -184,6 +190,7 @@ export function LibraryView({
     }
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
     if (queuedOnly) base = base.filter((doc) => doc.queuedAt != null);
+    if (plannedOnly) base = base.filter((doc) => doc.targetDate != null);
     if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
     if (ratedOnly) base = base.filter((doc) => Boolean(doc.rating));
     if (shortReadsOnly) {
@@ -216,6 +223,7 @@ export function LibraryView({
     documents,
     notesOnly,
     pinnedOnly,
+    plannedOnly,
     queuedOnly,
     query,
     ratedOnly,
@@ -445,6 +453,16 @@ export function LibraryView({
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={plannedOnly ? 'Include documents without finish plans' : 'Show planned documents only'}
+              accessibilityState={{ selected: plannedOnly }}
+              onPress={() => setPlannedOnly((value) => !value)}
+              style={[styles.sortChip, plannedOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, plannedOnly && styles.sortChipTextActive]}>
+                Planned
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel={ratedOnly ? 'Include unrated documents' : 'Show rated documents only'}
               accessibilityState={{ selected: ratedOnly }}
               onPress={() => setRatedOnly((value) => !value)}
@@ -556,6 +574,7 @@ export function LibraryView({
                 setStatusFilter('all');
                 setPinnedOnly(false);
                 setQueuedOnly(false);
+                setPlannedOnly(false);
                 setNotesOnly(false);
                 setRatedOnly(false);
                 setShortReadsOnly(false);
@@ -581,6 +600,7 @@ export function LibraryView({
                 ? `No documents match “${query.trim()}”.`
                 : pinnedOnly ||
                     queuedOnly ||
+                    plannedOnly ||
                     notesOnly ||
                     ratedOnly ||
                     shortReadsOnly ||
@@ -618,10 +638,12 @@ export function LibraryView({
                       const remaining = formatRemainingReadingTime(
                         estimateRemainingReadingSeconds(doc),
                       );
+                      const plan = getReadingPlan(doc);
                       const details = [
                         doc.collection ? doc.collection : '',
                         doc.rating ? `${'★'.repeat(doc.rating)} rating` : '',
                         doc.queuedAt ? 'Up next' : '',
+                        plan?.label ?? '',
                         doc.readingSeconds ? formatReadingTime(doc.readingSeconds) : '',
                         remaining,
                         noteCount
@@ -693,6 +715,18 @@ export function LibraryView({
                     style={[styles.actionBtn, doc.queuedAt != null && styles.pinActive]}>
                     <Text style={[styles.actionText, doc.queuedAt != null && styles.pinActiveText]}>
                       {doc.queuedAt ? 'Unqueue' : 'Queue'}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {onPlanDocument ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${doc.targetDate ? 'Edit' : 'Set'} finish plan for ${doc.name}`}
+                    hitSlop={8}
+                    onPress={() => onPlanDocument(doc.id)}
+                    style={[styles.actionBtn, doc.targetDate != null && styles.pinActive]}>
+                    <Text style={[styles.actionText, doc.targetDate != null && styles.pinActiveText]}>
+                      {doc.targetDate ? 'Plan' : 'Set plan'}
                     </Text>
                   </Pressable>
                 ) : null}

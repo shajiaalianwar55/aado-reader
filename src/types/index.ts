@@ -30,6 +30,7 @@ export type LibraryDocument = {
   rating?: DocumentRating;
   pinned?: boolean;
   queuedAt?: number;
+  targetDate?: number;
   finished?: boolean;
 };
 

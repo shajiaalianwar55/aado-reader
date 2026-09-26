@@ -5,6 +5,7 @@ import { LibraryView } from '@/src/components/LibraryView';
 import { CollectionModal } from '@/src/components/CollectionModal';
 import { RenameDocumentModal } from '@/src/components/RenameDocumentModal';
 import { RatingModal } from '@/src/components/RatingModal';
+import { ReadingPlanModal } from '@/src/components/ReadingPlanModal';
 import { TrashModal } from '@/src/components/TrashModal';
 import { pickPdfDocuments } from '@/src/lib/pickPdf';
 import { getLocalDateKey, getReadingStreak } from '@/src/lib/readingActivity';
@@ -21,6 +22,7 @@ export default function LibraryScreen() {
   const [renameId, setRenameId] = useState<string | null>(null);
   const [collectionId, setCollectionId] = useState<string | null>(null);
   const [ratingId, setRatingId] = useState<string | null>(null);
+  const [planId, setPlanId] = useState<string | null>(null);
   const [trash, setTrash] = useState<TrashedDocument[]>([]);
   const [trashVisible, setTrashVisible] = useState(false);
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState(20);
@@ -267,6 +269,7 @@ export default function LibraryScreen() {
         onRateDocument={setRatingId}
         onTogglePin={onTogglePin}
         onToggleQueue={onToggleQueue}
+        onPlanDocument={setPlanId}
         onToggleArchived={onToggleArchived}
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}
@@ -303,6 +306,18 @@ export default function LibraryScreen() {
           if (!ratingId) return;
           await updateDocument(ratingId, { rating });
           setRatingId(null);
+          await refresh();
+        }}
+      />
+      <ReadingPlanModal
+        visible={Boolean(planId)}
+        documentName={documents.find((document) => document.id === planId)?.name ?? ''}
+        targetDate={documents.find((document) => document.id === planId)?.targetDate}
+        onCancel={() => setPlanId(null)}
+        onSave={async (targetDate) => {
+          if (!planId) return;
+          await updateDocument(planId, { targetDate });
+          setPlanId(null);
           await refresh();
         }}
       />
