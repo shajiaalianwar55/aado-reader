@@ -16,6 +16,7 @@ import { ReaderChrome } from '@/src/components/ReaderChrome';
 import { ReaderControls } from '@/src/components/ReaderControls';
 import { ReadAloudControls } from '@/src/components/ReadAloudControls';
 import { SearchBar } from '@/src/components/SearchBar';
+import { SessionPageGoal } from '@/src/components/SessionPageGoal';
 import { ThemeControls } from '@/src/components/ThemeControls';
 import { useAutoHideChrome } from '@/src/hooks/useAutoHideChrome';
 import { useReadingProgress } from '@/src/hooks/useReadingProgress';
@@ -446,6 +447,15 @@ export default function ReaderScreen() {
               void recordFocusSession().catch(() => undefined);
               void successHaptic(hapticsEnabled);
               Alert.alert('Focus session complete', 'A quiet moment well spent.');
+            }}
+          />
+          <SessionPageGoal
+            theme={theme}
+            page={page}
+            pageCount={pageCount}
+            onComplete={() => {
+              void successHaptic(hapticsEnabled);
+              Alert.alert('Page goal complete', 'You reached your goal for this reading session.');
             }}
           />
           <SearchBar
