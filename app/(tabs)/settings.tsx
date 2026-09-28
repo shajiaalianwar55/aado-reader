@@ -6,6 +6,7 @@ import { clearLibrary, loadSettings, saveSettings } from '@/src/store/librarySto
 import { readingThemes } from '@/src/theme/readingThemes';
 import { defaultSettings } from '@/src/store/constants';
 import { pickBackup, restoreBackup, shareBackup } from '@/src/store/backupStore';
+import { loadReadingReminderHour, setReadingReminder } from '@/src/lib/readingReminder';
 import type { FitMode, ReaderSettings, ReadingThemeId, ScrollMode } from '@/src/types';
 
 export default function SettingsScreen() {
@@ -13,13 +14,29 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<ReaderSettings>(defaultSettings);
   const [loaded, setLoaded] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [reminderHour, setReminderHour] = useState<number | null>(null);
+  const [reminderBusy, setReminderBusy] = useState(false);
 
   useEffect(() => {
-    loadSettings().then((value) => {
+    Promise.all([loadSettings(), loadReadingReminderHour()]).then(([value, hour]) => {
       setSettings(value);
+      setReminderHour(hour);
       setLoaded(true);
     });
   }, []);
+
+  const updateReminder = useCallback(async (hour: number | null) => {
+    if (reminderBusy) return;
+    setReminderBusy(true);
+    try {
+      await setReadingReminder(hour);
+      setReminderHour(hour);
+    } catch (error) {
+      Alert.alert('Could not update reminder', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setReminderBusy(false);
+    }
+  }, [reminderBusy]);
 
   const update = useCallback(async (patch: Partial<ReaderSettings>) => {
     setSettings((current) => {
@@ -258,6 +275,32 @@ export default function SettingsScreen() {
         })}
       </View>
       <Text style={styles.goalHint}>Your progress and seven-day activity stay on this device.</Text>
+
+      <Text style={styles.section}>Daily reading reminder</Text>
+      <View style={styles.row}>
+        {[
+          { hour: null, label: 'Off' },
+          { hour: 8, label: '8 AM' },
+          { hour: 18, label: '6 PM' },
+          { hour: 20, label: '8 PM' },
+          { hour: 22, label: '10 PM' },
+        ].map((option) => {
+          const active = reminderHour === option.hour;
+          return (
+            <Pressable
+              key={option.label}
+              accessibilityRole="button"
+              accessibilityLabel={option.hour == null ? 'Turn off daily reading reminder' : `Remind me to read at ${option.label}`}
+              accessibilityState={{ selected: active, disabled: reminderBusy }}
+              disabled={reminderBusy}
+              onPress={() => updateReminder(option.hour)}
+              style={[styles.chip, active && styles.chipActive, reminderBusy && styles.disabled]}>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={styles.goalHint}>A private local notification on this device. No account required.</Text>
 
       <Text style={styles.section}>Focus session length</Text>
       <View style={styles.row}>

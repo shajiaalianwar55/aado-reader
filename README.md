@@ -22,6 +22,7 @@ Aado focuses on **reading comfort** first:
 - Personalized time-left estimates based on observed reading pace
 - Time-left sorting and an “Under 30m” smart reading filter
 - Configurable daily reading goals with at-a-glance progress
+- Optional private daily reading reminders at selectable times
 - Seven-day reading activity and current streak tracking
 - Thirty-day insights for reading time, longest streak, and daily-goal consistency
 - Library filters for unread, in-progress, finished, and annotated documents
