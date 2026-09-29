@@ -101,6 +101,26 @@ export function calculateRecentReadingMinutes(
   return Math.round(seconds / 60);
 }
 
+export function calculateRecentPages(
+  stats: ReadingStats,
+  days = 30,
+  today = new Date(),
+): number {
+  const includedDates = recentDateKeys(days, today);
+  return stats.days
+    .filter((day) => includedDates.has(day.date))
+    .reduce((total, day) => total + Math.max(0, day.pages), 0);
+}
+
+export function calculateActiveDays(
+  stats: ReadingStats,
+  days = 30,
+  today = new Date(),
+): number {
+  const includedDates = recentDateKeys(days, today);
+  return stats.days.filter((day) => includedDates.has(day.date) && day.seconds > 0).length;
+}
+
 export function calculateGoalDays(
   stats: ReadingStats,
   days = 30,

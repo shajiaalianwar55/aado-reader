@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
 import {
+  calculateActiveDays,
   calculateGoalDays,
   calculateLongestStreak,
   calculateRecentFocusSessions,
+  calculateRecentPages,
   calculateRecentReadingMinutes,
   calculateStreak,
   loadReadingStats,
@@ -48,9 +50,32 @@ export default function ActivityScreen() {
   });
   const maxMinutes = Math.max(stats.dailyGoalMinutes, ...recentDays.map((day) => day.minutes), 1);
   const recentMinutes = calculateRecentReadingMinutes(stats);
+  const recentPages = calculateRecentPages(stats);
+  const activeDays = calculateActiveDays(stats);
   const goalDays = calculateGoalDays(stats);
   const longestStreak = calculateLongestStreak(stats);
   const recentFocusSessions = calculateRecentFocusSessions(stats);
+  const currentStreak = calculateStreak(stats);
+
+  const shareReport = async () => {
+    const message = [
+      'My Aado 30-day reading report',
+      '',
+      `${recentMinutes} minutes read`,
+      `${recentPages} pages read`,
+      `${activeDays} active reading days`,
+      `${goalDays} daily goals reached`,
+      `${currentStreak} day current streak`,
+      `${longestStreak} day longest streak`,
+      `${recentFocusSessions} focus sessions in the last 7 days`,
+      `${finished} documents finished`,
+    ].join('\n');
+    try {
+      await Share.share({ title: 'Aado reading report', message });
+    } catch (error) {
+      Alert.alert('Could not share report', error instanceof Error ? error.message : 'Unknown error');
+    }
+  };
 
   const updateGoal = async (goal: number) => {
     const settings = await loadSettings();
@@ -65,7 +90,16 @@ export default function ActivityScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
-      <Text style={styles.brand}>Aado</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.brand}>Aado</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Share 30-day reading report"
+          onPress={shareReport}
+          style={styles.shareButton}>
+          <Text style={styles.shareText}>Share report</Text>
+        </Pressable>
+      </View>
       <Text style={styles.title}>Reading activity</Text>
       <Text style={styles.subtitle}>A quiet record of the time you make for reading.</Text>
 
@@ -79,7 +113,7 @@ export default function ActivityScreen() {
       </View>
 
       <View style={styles.metrics}>
-        <Metric label="Day streak" value={`${calculateStreak(stats)}`} />
+        <Metric label="Day streak" value={`${currentStreak}`} />
         <Metric label="Finished" value={`${finished}`} />
         <Metric label="Today’s PDFs" value={`${today?.documentIds.length ?? 0}`} />
       </View>
@@ -142,7 +176,10 @@ function Metric({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F1419' },
   content: { padding: 24, paddingTop: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   brand: { color: '#C4A574', fontSize: 36, fontWeight: '700', letterSpacing: -1 },
+  shareButton: { borderColor: '#C4A574', borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8 },
+  shareText: { color: '#C4A574', fontSize: 12, fontWeight: '700' },
   title: { color: '#F4F1EA', fontSize: 22, fontWeight: '600', marginTop: 4 },
   subtitle: { color: '#9CA3AF', fontSize: 14, lineHeight: 21, marginTop: 6, marginBottom: 20 },
   hero: { backgroundColor: '#1A222D', borderColor: '#2A3441', borderWidth: 1, borderRadius: 16, padding: 18 },

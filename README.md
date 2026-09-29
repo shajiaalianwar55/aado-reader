@@ -25,6 +25,7 @@ Aado focuses on **reading comfort** first:
 - Optional private daily reading reminders at selectable times
 - Seven-day reading activity and current streak tracking
 - Thirty-day insights for reading time, longest streak, and daily-goal consistency
+- Shareable 30-day reading reports with time, pages, consistency, and streaks
 - Library filters for unread, in-progress, finished, and annotated documents
 - One-tap reset for library search, sorting, and filters
 - Library sorting by recency, title, progress, and reading time
