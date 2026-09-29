@@ -9,6 +9,7 @@ import { ReadingPlanModal } from '@/src/components/ReadingPlanModal';
 import { TrashModal } from '@/src/components/TrashModal';
 import { pickPdfDocuments } from '@/src/lib/pickPdf';
 import { getLocalDateKey, getReadingStreak } from '@/src/lib/readingActivity';
+import { shareStarredAnnotationDigest } from '@/src/lib/annotationDigest';
 import {
   emptyTrash, loadLibrary, loadSettings, loadTrash, permanentlyDeleteDocument,
   restoreDocument, trashDocument, updateDocument, upsertDocument,
@@ -256,6 +257,14 @@ export default function LibraryScreen() {
     }
   }, [dailyGoalMinutes, documents]);
 
+  const onShareStarredDigest = useCallback(async () => {
+    try {
+      await shareStarredAnnotationDigest(documents);
+    } catch (error) {
+      Alert.alert('Could not share starred annotations', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }, [documents]);
+
   return (
     <>
       <LibraryView
@@ -274,6 +283,7 @@ export default function LibraryScreen() {
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}
         onShareInsights={onShareInsights}
+        onShareStarredDigest={onShareStarredDigest}
         trashCount={trash.length}
         onOpenTrash={() => setTrashVisible(true)}
       />

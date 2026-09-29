@@ -55,6 +55,7 @@ type LibraryScreenProps = {
   onRestartDocument?: (id: string) => void;
   onToggleFinished?: (id: string) => void;
   onShareInsights?: () => void;
+  onShareStarredDigest?: () => void;
   trashCount?: number;
   onOpenTrash?: () => void;
 };
@@ -127,6 +128,7 @@ export function LibraryView({
   onRestartDocument,
   onToggleFinished,
   onShareInsights,
+  onShareStarredDigest,
   trashCount = 0,
   onOpenTrash,
 }: LibraryScreenProps) {
@@ -183,6 +185,7 @@ export function LibraryView({
       minutes: Math.floor(documents.reduce((sum, doc) => sum + (doc.readingSeconds ?? 0), 0) / 60),
       finished: documents.filter((doc) => doc.finished).length,
       notes: documents.reduce((sum, doc) => sum + getNoteCount(doc), 0),
+      starred: documents.reduce((sum, doc) => sum + getStarredCount(doc), 0),
       todaySeconds,
       todayMinutes: Math.floor(todaySeconds / 60),
       streak: getReadingStreak(documents),
@@ -394,18 +397,29 @@ export function LibraryView({
       ) : null}
 
       {!emptyLibrary ? (
-        <View style={styles.insightsCard} accessibilityLabel={`${insights.minutes} minutes read, ${insights.finished} completed, ${insights.notes} annotations`}>
+        <View style={styles.insightsCard} accessibilityLabel={`${insights.minutes} minutes read, ${insights.finished} completed, ${insights.notes} annotations, ${insights.starred} starred`}>
           <View style={styles.insightsHeader}>
             <Text style={styles.insightsTitle}>Reading insights</Text>
-            {onShareInsights ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Share reading insights"
-                onPress={onShareInsights}
-                style={styles.insightsShareButton}>
-                <Text style={styles.insightsShareText}>Share</Text>
-              </Pressable>
-            ) : null}
+            <View style={styles.insightsActions}>
+              {onShareStarredDigest && insights.starred > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Share ${insights.starred} starred annotations as Markdown`}
+                  onPress={onShareStarredDigest}
+                  style={styles.insightsShareButton}>
+                  <Text style={styles.insightsShareText}>Starred .md</Text>
+                </Pressable>
+              ) : null}
+              {onShareInsights ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share reading insights"
+                  onPress={onShareInsights}
+                  style={styles.insightsShareButton}>
+                  <Text style={styles.insightsShareText}>Share</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
           <View style={styles.insightsRow}>
             <View style={styles.insight}><Text style={styles.insightValue}>{insights.minutes}</Text><Text style={styles.insightLabel}>minutes</Text></View>
@@ -891,6 +905,7 @@ const styles = StyleSheet.create({
   activityLabel: { color: '#6B7280', fontSize: 10, fontWeight: '600' },
   activityCaption: { color: '#6B7280', fontSize: 11, marginTop: 5, textAlign: 'center' },
   insightsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  insightsActions: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   insightsTitle: { color: '#9CA3AF', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
   insightsShareButton: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#1E2630' },
   insightsShareText: { color: '#C4A574', fontSize: 12, fontWeight: '700' },
