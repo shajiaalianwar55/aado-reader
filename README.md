@@ -32,6 +32,7 @@ Aado focuses on **reading comfort** first:
 - Custom collections for grouping and filtering related documents
 - An ordered “Up next” reading queue with a dedicated library view
 - Per-document finish plans with due dates and an automatic pages-per-day pace
+- Earliest-deadline sorting and a smart overdue-or-due-soon library filter
 - Non-destructive document archiving with a dedicated archive view
 - Persistent 1–5 star ratings with rated-only filtering and sorting
 - Page scrubber for long documents

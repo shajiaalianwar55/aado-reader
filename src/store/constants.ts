@@ -45,6 +45,7 @@ export function sortLibraryByMode<
     finished?: boolean;
     pinned?: boolean;
     queuedAt?: number;
+    targetDate?: number;
   },
 >(docs: T[], mode: import('@/src/types').LibrarySortMode): T[] {
   return [...docs].sort((a, b) => {
@@ -69,6 +70,12 @@ export function sortLibraryByMode<
       if (a.queuedAt == null) return 1;
       if (b.queuedAt == null) return -1;
       return a.queuedAt - b.queuedAt;
+    }
+    if (mode === 'dueDate') {
+      if (a.targetDate == null && b.targetDate == null) return b.lastOpened - a.lastOpened;
+      if (a.targetDate == null) return 1;
+      if (b.targetDate == null) return -1;
+      return a.targetDate - b.targetDate;
     }
     if (mode === 'timeLeft') {
       const aRemaining = estimateRemainingReadingSeconds(a);

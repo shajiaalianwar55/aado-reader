@@ -45,6 +45,7 @@ export type LibrarySortMode =
   | 'progress'
   | 'readingTime'
   | 'timeLeft'
+  | 'dueDate'
   | 'queue'
   | 'rating';
 

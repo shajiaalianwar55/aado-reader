@@ -65,6 +65,7 @@ const SORT_OPTIONS: { id: LibrarySortMode; label: string }[] = [
   { id: 'progress', label: 'Progress' },
   { id: 'readingTime', label: 'Time read' },
   { id: 'timeLeft', label: 'Time left' },
+  { id: 'dueDate', label: 'Due date' },
   { id: 'queue', label: 'Queue' },
   { id: 'rating', label: 'Rating' },
 ];
@@ -136,6 +137,7 @@ export function LibraryView({
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [queuedOnly, setQueuedOnly] = useState(false);
   const [plannedOnly, setPlannedOnly] = useState(false);
+  const [dueSoonOnly, setDueSoonOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
   const [ratedOnly, setRatedOnly] = useState(false);
   const [shortReadsOnly, setShortReadsOnly] = useState(false);
@@ -153,6 +155,10 @@ export function LibraryView({
     [documents],
   );
   const archivedCount = documents.filter((document) => document.archived).length;
+  const dueSoonCount = documents.filter((document) => {
+    const plan = getReadingPlan(document);
+    return !document.archived && !document.finished && Boolean(plan && (plan.overdue || plan.daysRemaining <= 7));
+  }).length;
   const hasActiveFilters =
     Boolean(query.trim()) ||
     sortMode !== 'recent' ||
@@ -160,6 +166,7 @@ export function LibraryView({
     pinnedOnly ||
     queuedOnly ||
     plannedOnly ||
+    dueSoonOnly ||
     notesOnly ||
     ratedOnly ||
     shortReadsOnly ||
@@ -197,6 +204,12 @@ export function LibraryView({
     if (pinnedOnly) base = base.filter((doc) => doc.pinned);
     if (queuedOnly) base = base.filter((doc) => doc.queuedAt != null);
     if (plannedOnly) base = base.filter((doc) => doc.targetDate != null);
+    if (dueSoonOnly) {
+      base = base.filter((doc) => {
+        const plan = getReadingPlan(doc);
+        return !doc.finished && Boolean(plan && (plan.overdue || plan.daysRemaining <= 7));
+      });
+    }
     if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
     if (ratedOnly) base = base.filter((doc) => Boolean(doc.rating));
     if (shortReadsOnly) {
@@ -227,6 +240,7 @@ export function LibraryView({
   }, [
     collectionFilter,
     documents,
+    dueSoonOnly,
     notesOnly,
     pinnedOnly,
     plannedOnly,
@@ -469,6 +483,16 @@ export function LibraryView({
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={dueSoonOnly ? 'Include documents due later' : 'Show overdue and soon-due documents only'}
+              accessibilityState={{ selected: dueSoonOnly }}
+              onPress={() => setDueSoonOnly((value) => !value)}
+              style={[styles.sortChip, dueSoonOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, dueSoonOnly && styles.sortChipTextActive]}>
+                Due soon ({dueSoonCount})
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel={ratedOnly ? 'Include unrated documents' : 'Show rated documents only'}
               accessibilityState={{ selected: ratedOnly }}
               onPress={() => setRatedOnly((value) => !value)}
@@ -581,6 +605,7 @@ export function LibraryView({
                 setPinnedOnly(false);
                 setQueuedOnly(false);
                 setPlannedOnly(false);
+                setDueSoonOnly(false);
                 setNotesOnly(false);
                 setRatedOnly(false);
                 setShortReadsOnly(false);
@@ -607,6 +632,7 @@ export function LibraryView({
                 : pinnedOnly ||
                     queuedOnly ||
                     plannedOnly ||
+                    dueSoonOnly ||
                     notesOnly ||
                     ratedOnly ||
                     shortReadsOnly ||
