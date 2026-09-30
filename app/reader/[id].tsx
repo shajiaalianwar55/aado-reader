@@ -34,6 +34,7 @@ export default function ReaderScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id: string; uri?: string; name?: string; startPage?: string }>();
   const viewerRef = useRef<PdfViewerHandle>(null);
+  const copyTextPageRef = useRef<number | null>(null);
   const [doc, setDoc] = useState<LibraryDocument | null>(null);
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(0);
@@ -338,7 +339,7 @@ export default function ReaderScreen() {
     }
   }, [doc?.finished, goPage, pageCount, params.id]);
 
-  const onCopyPage = useCallback(async () => {
+  const copyPageReference = useCallback(async () => {
     const text =
       pageCount > 0 ? `Page ${page} of ${pageCount} — ${title}` : `Page ${page} — ${title}`;
     try {
@@ -348,6 +349,28 @@ export default function ReaderScreen() {
       Alert.alert('Could not copy', error instanceof Error ? error.message : 'Unknown error');
     }
   }, [page, pageCount, title]);
+
+  const copyPageText = useCallback(async () => {
+    if (pageText.trim()) {
+      try {
+        await Clipboard.setStringAsync(pageText.trim());
+        Alert.alert('Page text copied', `Copied text from page ${page}.`);
+      } catch (error) {
+        Alert.alert('Could not copy text', error instanceof Error ? error.message : 'Unknown error');
+      }
+      return;
+    }
+    copyTextPageRef.current = page;
+    viewerRef.current?.requestPageText(page);
+  }, [page, pageText]);
+
+  const onCopyPage = useCallback(() => {
+    Alert.alert('Copy from this page', 'Choose what to place on the clipboard.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Page reference', onPress: () => void copyPageReference() },
+      { text: 'Page text', onPress: () => void copyPageText() },
+    ]);
+  }, [copyPageReference, copyPageText]);
 
   if (!uri || !restored) {
     return (
@@ -408,7 +431,7 @@ export default function ReaderScreen() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Copy current page number"
+            accessibilityLabel="Copy page reference or extracted page text"
             onPress={onCopyPage}
             hitSlop={8}
             style={styles.shareBtn}>
@@ -523,6 +546,19 @@ export default function ReaderScreen() {
           }}
           onPageText={(textPage, text) => {
             if (textPage === page) setPageText(text);
+            if (copyTextPageRef.current === textPage) {
+              copyTextPageRef.current = null;
+              if (!text.trim()) {
+                Alert.alert('No text found', `Page ${textPage} does not contain extractable text.`);
+                return;
+              }
+              void Clipboard.setStringAsync(text.trim())
+                .then(() => Alert.alert('Page text copied', `Copied text from page ${textPage}.`))
+                .catch((error) => Alert.alert(
+                  'Could not copy text',
+                  error instanceof Error ? error.message : 'Unknown error',
+                ));
+            }
           }}
           onError={setError}
         />

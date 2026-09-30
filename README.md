@@ -12,6 +12,7 @@ Aado focuses on **reading comfort** first:
 - Day, sepia, and night themes with brightness control
 - Immersive chrome that hides while you read
 - In-document search, bookmarks, and last-page restore
+- Clipboard copying for either a page reference or the page’s extracted PDF text
 - Page-specific reading notes with quick navigation and library search
 - Shareable page-note summaries
 - Library search and filtering across notes and colored highlights
