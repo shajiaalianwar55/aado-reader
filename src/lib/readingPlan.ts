@@ -1,8 +1,14 @@
-type ReadingPlanDocument = {
+export type ReadingPlanDocument = {
   lastPage: number;
   pageCount: number;
   finished?: boolean;
   targetDate?: number;
+};
+
+type PlannedLibraryDocument = ReadingPlanDocument & {
+  id: string;
+  name: string;
+  archived?: boolean;
 };
 
 function localDayNumber(date: Date): number {
@@ -36,4 +42,34 @@ export function getReadingPlan(
       : `${pagesPerDay} page${pagesPerDay === 1 ? '' : 's'}/day · due ${due}`;
 
   return { daysRemaining, pagesPerDay, overdue, label };
+}
+
+export function getTodayReadingPlan(
+  documents: PlannedLibraryDocument[],
+  today = new Date(),
+): {
+  documentCount: number;
+  pagesToday: number;
+  overdueCount: number;
+  unknownPaceCount: number;
+  nextDocumentId: string;
+  nextDocumentName: string;
+  nextPages: number;
+} | null {
+  const planned = documents
+    .filter((document) => !document.archived && !document.finished && document.targetDate != null)
+    .map((document) => ({ document, plan: getReadingPlan(document, today) }))
+    .filter((item): item is { document: PlannedLibraryDocument; plan: NonNullable<ReturnType<typeof getReadingPlan>> } => item.plan != null)
+    .sort((a, b) => (a.document.targetDate ?? 0) - (b.document.targetDate ?? 0));
+  if (!planned.length) return null;
+
+  return {
+    documentCount: planned.length,
+    pagesToday: planned.reduce((total, item) => total + item.plan.pagesPerDay, 0),
+    overdueCount: planned.filter((item) => item.plan.overdue).length,
+    unknownPaceCount: planned.filter((item) => item.document.pageCount <= 0).length,
+    nextDocumentId: planned[0].document.id,
+    nextDocumentName: planned[0].document.name,
+    nextPages: planned[0].plan.pagesPerDay,
+  };
 }

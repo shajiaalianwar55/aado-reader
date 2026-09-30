@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatReadingProgress } from '@/src/lib/readingProgress';
-import { getReadingPlan } from '@/src/lib/readingPlan';
+import { getReadingPlan, getTodayReadingPlan } from '@/src/lib/readingPlan';
 import {
   estimateRemainingReadingSeconds,
   formatRemainingReadingTime,
@@ -281,6 +281,7 @@ export function LibraryView({
         .sort((a, b) => (a.queuedAt ?? 0) - (b.queuedAt ?? 0))[0] ?? null,
     [documents],
   );
+  const todayPlan = useMemo(() => getTodayReadingPlan(documents), [documents]);
 
   return (
     <ScrollView
@@ -345,6 +346,31 @@ export function LibraryView({
               ? ` · ${formatReadingProgress(continueDoc.lastPage, continueDoc.pageCount)}`
               : ''}
             {continueEstimate ? ` · ${continueEstimate}` : ''}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {todayPlan ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open most urgent planned document, ${todayPlan.nextDocumentName}`}
+          onPress={() => onSelectDocument?.(todayPlan.nextDocumentId)}
+          style={({ pressed }) => [styles.planCard, pressed && styles.pressed]}>
+          <View style={styles.planHeader}>
+            <Text style={styles.continueEyebrow}>Today&apos;s plan</Text>
+            {todayPlan.overdueCount > 0 ? (
+              <Text style={styles.overdueText}>{todayPlan.overdueCount} overdue</Text>
+            ) : null}
+          </View>
+          <Text style={styles.planValue}>
+            {todayPlan.pagesToday > 0
+              ? `${todayPlan.pagesToday} pages across ${todayPlan.documentCount} document${todayPlan.documentCount === 1 ? '' : 's'}`
+              : 'Open a planned PDF to calculate today’s pace'}
+          </Text>
+          <Text style={styles.continueMeta} numberOfLines={1}>
+            Next: {todayPlan.nextDocumentName}
+            {todayPlan.nextPages > 0 ? ` · ${todayPlan.nextPages} pages` : ''}
+            {todayPlan.unknownPaceCount > 0 ? ` · ${todayPlan.unknownPaceCount} awaiting page count` : ''}
           </Text>
         </Pressable>
       ) : null}
@@ -1026,6 +1052,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 4,
   },
+  planCard: {
+    borderWidth: 1,
+    borderColor: '#D9828C',
+    backgroundColor: '#261A20',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 5,
+  },
+  planHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  planValue: { color: '#F4F1EA', fontSize: 17, fontWeight: '700' },
+  overdueText: { color: '#E8A0A0', fontSize: 12, fontWeight: '700' },
   rowArchived: {
     opacity: 0.82,
   },
