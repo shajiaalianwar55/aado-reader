@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'rea
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
+import { ReadingHeatmap } from '@/src/components/ReadingHeatmap';
 import {
   calculateActiveDays,
   calculateGoalDays,
@@ -137,6 +138,9 @@ export default function ActivityScreen() {
         <Metric label="Longest streak" value={`${longestStreak}`} />
         <Metric label="Goal days" value={`${goalDays}`} />
       </View>
+
+      <Text style={styles.section}>LAST 28 DAYS</Text>
+      <ReadingHeatmap stats={stats} />
 
       <Text style={styles.section}>FOCUS SESSIONS</Text>
       <View style={styles.focusMetrics}>
