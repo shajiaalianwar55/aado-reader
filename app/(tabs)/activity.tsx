@@ -12,6 +12,7 @@ import {
   calculateRecentPages,
   calculateRecentReadingMinutes,
   calculateStreak,
+  calculateWeeklyComparison,
   loadReadingStats,
   localDateKey,
   setDailyReadingGoal,
@@ -57,6 +58,10 @@ export default function ActivityScreen() {
   const longestStreak = calculateLongestStreak(stats);
   const recentFocusSessions = calculateRecentFocusSessions(stats);
   const currentStreak = calculateStreak(stats);
+  const weeklyComparison = calculateWeeklyComparison(stats);
+  const weeklyTrend = weeklyComparison.changePercent == null
+    ? 'New reading time this week'
+    : `${weeklyComparison.changePercent >= 0 ? '+' : ''}${weeklyComparison.changePercent}% vs previous week`;
 
   const shareReport = async () => {
     const message = [
@@ -132,6 +137,29 @@ export default function ActivityScreen() {
         ))}
       </View>
 
+      <Text style={styles.section}>WEEKLY TREND</Text>
+      <View style={styles.weeklyCard}>
+        <View style={styles.weeklyValues}>
+          <View>
+            <Text style={styles.weeklyValue}>{weeklyComparison.currentMinutes} min</Text>
+            <Text style={styles.weeklyLabel}>This week · {weeklyComparison.currentPages} pages</Text>
+          </View>
+          <View style={styles.weeklyPrevious}>
+            <Text style={styles.weeklyValue}>{weeklyComparison.previousMinutes} min</Text>
+            <Text style={styles.weeklyLabel}>Previous · {weeklyComparison.previousPages} pages</Text>
+          </View>
+        </View>
+        <Text
+          style={[
+            styles.weeklyTrend,
+            weeklyComparison.changePercent != null && weeklyComparison.changePercent < 0
+              ? styles.weeklyTrendDown
+              : null,
+          ]}>
+          {weeklyTrend}
+        </Text>
+      </View>
+
       <Text style={styles.section}>LAST 30 DAYS</Text>
       <View style={styles.insights}>
         <Metric label="Minutes read" value={`${recentMinutes}`} />
@@ -205,6 +233,13 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, width: 16, borderRadius: 8, backgroundColor: '#202936', overflow: 'hidden', justifyContent: 'flex-end' },
   bar: { width: '100%', backgroundColor: '#C4A574', borderRadius: 8 },
   day: { color: '#9CA3AF', fontSize: 11, marginTop: 5 },
+  weeklyCard: { backgroundColor: '#141A22', borderRadius: 14, padding: 15 },
+  weeklyValues: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
+  weeklyPrevious: { alignItems: 'flex-end' },
+  weeklyValue: { color: '#F4F1EA', fontSize: 20, fontWeight: '700' },
+  weeklyLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 3 },
+  weeklyTrend: { color: '#70BFA1', fontSize: 12, fontWeight: '700', marginTop: 13 },
+  weeklyTrendDown: { color: '#E8A0A0' },
   goals: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   goal: { borderColor: '#2A3441', borderWidth: 1, backgroundColor: '#141A22', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 11 },
   goalActive: { backgroundColor: '#C4A574', borderColor: '#C4A574' },

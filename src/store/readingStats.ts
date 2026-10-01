@@ -121,6 +121,45 @@ export function calculateActiveDays(
   return stats.days.filter((day) => includedDates.has(day.date) && day.seconds > 0).length;
 }
 
+export function calculateWeeklyComparison(
+  stats: ReadingStats,
+  today = new Date(),
+): {
+  currentMinutes: number;
+  previousMinutes: number;
+  currentPages: number;
+  previousPages: number;
+  changePercent: number | null;
+} {
+  const dateKeys = (startOffset: number) => new Set(
+    Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      date.setDate(date.getDate() - (startOffset + index));
+      return localDateKey(date);
+    }),
+  );
+  const totals = (keys: Set<string>) => stats.days
+    .filter((day) => keys.has(day.date))
+    .reduce(
+      (total, day) => ({
+        seconds: total.seconds + Math.max(0, day.seconds),
+        pages: total.pages + Math.max(0, day.pages),
+      }),
+      { seconds: 0, pages: 0 },
+    );
+  const current = totals(dateKeys(0));
+  const previous = totals(dateKeys(7));
+  return {
+    currentMinutes: Math.round(current.seconds / 60),
+    previousMinutes: Math.round(previous.seconds / 60),
+    currentPages: current.pages,
+    previousPages: previous.pages,
+    changePercent: previous.seconds > 0
+      ? Math.round(((current.seconds - previous.seconds) / previous.seconds) * 100)
+      : current.seconds > 0 ? null : 0,
+  };
+}
+
 export function calculateGoalDays(
   stats: ReadingStats,
   days = 30,
