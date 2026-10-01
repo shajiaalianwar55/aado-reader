@@ -54,6 +54,17 @@ export async function removeDocument(id: string): Promise<LibraryDocument[]> {
   return next;
 }
 
+export async function archiveFinishedDocuments(): Promise<LibraryDocument[]> {
+  const docs = await loadLibrary();
+  const next = docs.map((document) =>
+    document.finished && !document.archived
+      ? { ...document, archived: true, queuedAt: undefined }
+      : document,
+  );
+  await saveLibrary(next);
+  return next;
+}
+
 export async function loadTrash(): Promise<TrashedDocument[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.trash);
   if (!raw) return [];

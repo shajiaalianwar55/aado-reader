@@ -11,7 +11,7 @@ import { pickPdfDocuments } from '@/src/lib/pickPdf';
 import { getLocalDateKey, getReadingStreak } from '@/src/lib/readingActivity';
 import { shareStarredAnnotationDigest } from '@/src/lib/annotationDigest';
 import {
-  emptyTrash, loadLibrary, loadSettings, loadTrash, permanentlyDeleteDocument,
+  archiveFinishedDocuments, emptyTrash, loadLibrary, loadSettings, loadTrash, permanentlyDeleteDocument,
   restoreDocument, trashDocument, updateDocument, upsertDocument,
 } from '@/src/store/libraryStore';
 import type { LibraryDocument, TrashedDocument } from '@/src/types';
@@ -182,6 +182,28 @@ export default function LibraryScreen() {
     [documents, refresh],
   );
 
+  const onArchiveFinished = useCallback(() => {
+    const count = documents.filter((document) => document.finished && !document.archived).length;
+    if (!count) return;
+    Alert.alert(
+      'Archive finished documents?',
+      `${count} completed document${count === 1 ? '' : 's'} will move out of the active library.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Archive',
+          onPress: async () => {
+            try {
+              setDocuments(await archiveFinishedDocuments());
+            } catch (error) {
+              Alert.alert('Could not archive documents', error instanceof Error ? error.message : 'Unknown error');
+            }
+          },
+        },
+      ],
+    );
+  }, [documents]);
+
   const onRestartDocument = useCallback(
     (id: string) => {
       const doc = documents.find((d) => d.id === id);
@@ -280,6 +302,7 @@ export default function LibraryScreen() {
         onToggleQueue={onToggleQueue}
         onPlanDocument={setPlanId}
         onToggleArchived={onToggleArchived}
+        onArchiveFinished={onArchiveFinished}
         onRestartDocument={onRestartDocument}
         onToggleFinished={onToggleFinished}
         onShareInsights={onShareInsights}

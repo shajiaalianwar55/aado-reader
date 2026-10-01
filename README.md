@@ -39,6 +39,7 @@ Aado focuses on **reading comfort** first:
 - Earliest-deadline sorting and a smart overdue-or-due-soon library filter
 - A daily finish-plan agenda totaling today’s pages and surfacing the most urgent PDF
 - Non-destructive document archiving with a dedicated archive view
+- One-tap bulk archiving for every completed document
 - Persistent 1–5 star ratings with rated-only filtering and sorting
 - Page scrubber for long documents
 - Keep-awake and free orientation while a document is open

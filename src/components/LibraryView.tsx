@@ -52,6 +52,7 @@ type LibraryScreenProps = {
   onToggleQueue?: (id: string) => void;
   onPlanDocument?: (id: string) => void;
   onToggleArchived?: (id: string) => void;
+  onArchiveFinished?: () => void;
   onRestartDocument?: (id: string) => void;
   onToggleFinished?: (id: string) => void;
   onShareInsights?: () => void;
@@ -125,6 +126,7 @@ export function LibraryView({
   onToggleQueue,
   onPlanDocument,
   onToggleArchived,
+  onArchiveFinished,
   onRestartDocument,
   onToggleFinished,
   onShareInsights,
@@ -157,6 +159,7 @@ export function LibraryView({
     [documents],
   );
   const archivedCount = documents.filter((document) => document.archived).length;
+  const activeFinishedCount = documents.filter((document) => document.finished && !document.archived).length;
   const dueSoonCount = documents.filter((document) => {
     const plan = getReadingPlan(document);
     return !document.archived && !document.finished && Boolean(plan && (plan.overdue || plan.daysRemaining <= 7));
@@ -593,6 +596,15 @@ export function LibraryView({
                 Archived ({archivedCount})
               </Text>
             </Pressable>
+            {onArchiveFinished && activeFinishedCount > 0 && !showArchived ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Archive ${activeFinishedCount} finished documents`}
+                onPress={onArchiveFinished}
+                style={styles.archiveFinishedButton}>
+                <Text style={styles.archiveFinishedText}>Archive finished ({activeFinishedCount})</Text>
+              </Pressable>
+            ) : null}
           </View>
           {collections.length ? (
             <>
@@ -1006,6 +1018,15 @@ const styles = StyleSheet.create({
   sortChipTextActive: {
     color: '#0F1419',
   },
+  archiveFinishedButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#70BFA1',
+    backgroundColor: '#16231F',
+  },
+  archiveFinishedText: { color: '#70BFA1', fontSize: 13, fontWeight: '700' },
   pressed: {
     opacity: 0.85,
   },
