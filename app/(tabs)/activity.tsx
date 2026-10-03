@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadLibrary, loadSettings, saveSettings } from '@/src/store/libraryStore';
 import { ReadingHeatmap } from '@/src/components/ReadingHeatmap';
+import { ReadingMilestones } from '@/src/components/ReadingMilestones';
 import {
   calculateActiveDays,
   calculateGoalDays,
@@ -169,6 +170,9 @@ export default function ActivityScreen() {
 
       <Text style={styles.section}>LAST 28 DAYS</Text>
       <ReadingHeatmap stats={stats} />
+
+      <Text style={styles.section}>MILESTONES</Text>
+      <ReadingMilestones stats={stats} finishedDocuments={finished} />
 
       <Text style={styles.section}>FOCUS SESSIONS</Text>
       <View style={styles.focusMetrics}>
