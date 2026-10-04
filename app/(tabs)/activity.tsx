@@ -13,6 +13,7 @@ import {
   calculateRecentFocusSessions,
   calculateRecentPages,
   calculateRecentReadingMinutes,
+  calculateReadingPatterns,
   calculateStreak,
   calculateWeeklyComparison,
   loadReadingStats,
@@ -62,6 +63,7 @@ export default function ActivityScreen() {
   const currentStreak = calculateStreak(stats);
   const weeklyComparison = calculateWeeklyComparison(stats);
   const personalBests = calculatePersonalBests(stats);
+  const readingPatterns = calculateReadingPatterns(stats);
   const weeklyTrend = weeklyComparison.changePercent == null
     ? 'New reading time this week'
     : `${weeklyComparison.changePercent >= 0 ? '+' : ''}${weeklyComparison.changePercent}% vs previous week`;
@@ -189,6 +191,28 @@ export default function ActivityScreen() {
         />
       </View>
 
+      <Text style={styles.section}>READING PATTERN</Text>
+      <View
+        accessibilityLabel={`${readingPatterns.averageActiveDayMinutes} average minutes per active day, ${readingPatterns.pagesPerHour} pages per hour${readingPatterns.favoriteWeekday ? `, most reading on ${readingPatterns.favoriteWeekday}` : ''}`}
+        style={styles.patternCard}>
+        <View style={styles.patternMetrics}>
+          <View style={styles.patternMetric}>
+            <Text style={styles.patternValue}>{readingPatterns.averageActiveDayMinutes} min</Text>
+            <Text style={styles.patternLabel}>Average active day</Text>
+          </View>
+          <View style={styles.patternDivider} />
+          <View style={styles.patternMetric}>
+            <Text style={styles.patternValue}>{readingPatterns.pagesPerHour}</Text>
+            <Text style={styles.patternLabel}>Pages per hour</Text>
+          </View>
+        </View>
+        <Text style={styles.patternNote}>
+          {readingPatterns.favoriteWeekday
+            ? `Your strongest reading day is ${readingPatterns.favoriteWeekday}.`
+            : 'Read on a few days to reveal your natural rhythm.'}
+        </Text>
+      </View>
+
       <Text style={styles.section}>LAST 28 DAYS</Text>
       <ReadingHeatmap stats={stats} />
 
@@ -285,6 +309,13 @@ const styles = StyleSheet.create({
   bestLabel: { color: '#E8EAED', fontSize: 14, fontWeight: '700' },
   bestDate: { color: '#7F8996', fontSize: 11, marginTop: 2 },
   bestValue: { color: '#C4A574', fontSize: 18, fontWeight: '800' },
+  patternCard: { backgroundColor: '#141A22', borderRadius: 14, padding: 15 },
+  patternMetrics: { flexDirection: 'row', alignItems: 'stretch' },
+  patternMetric: { flex: 1 },
+  patternDivider: { width: 1, backgroundColor: '#202936', marginHorizontal: 15 },
+  patternValue: { color: '#F4F1EA', fontSize: 20, fontWeight: '800' },
+  patternLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 3 },
+  patternNote: { color: '#C4A574', fontSize: 12, fontWeight: '700', marginTop: 15 },
   goals: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   goal: { borderColor: '#2A3441', borderWidth: 1, backgroundColor: '#141A22', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 11 },
   goalActive: { backgroundColor: '#C4A574', borderColor: '#C4A574' },

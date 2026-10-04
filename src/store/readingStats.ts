@@ -233,3 +233,37 @@ export function calculatePersonalBests(stats: ReadingStats): {
     focusDate: bestFocusDay && (bestFocusDay.focusSessions ?? 0) > 0 ? bestFocusDay.date : null,
   };
 }
+
+export function calculateReadingPatterns(stats: ReadingStats): {
+  averageActiveDayMinutes: number;
+  pagesPerHour: number;
+  favoriteWeekday: string | null;
+} {
+  const activeDays = stats.days.filter((day) => day.seconds > 0);
+  const totalSeconds = activeDays.reduce((total, day) => total + Math.max(0, day.seconds), 0);
+  const totalPages = activeDays.reduce((total, day) => total + Math.max(0, day.pages), 0);
+  const weekdaySeconds = Array.from({ length: 7 }, () => 0);
+
+  activeDays.forEach((day) => {
+    const [year, month, date] = day.date.split('-').map(Number);
+    const weekday = new Date(year, month - 1, date).getDay();
+    weekdaySeconds[weekday] += Math.max(0, day.seconds);
+  });
+
+  const favoriteWeekdayIndex = weekdaySeconds.reduce(
+    (best, seconds, index) => seconds > weekdaySeconds[best] ? index : best,
+    0,
+  );
+
+  return {
+    averageActiveDayMinutes: activeDays.length
+      ? Math.round(totalSeconds / activeDays.length / 60)
+      : 0,
+    pagesPerHour: totalSeconds > 0 ? Math.round((totalPages * 36000) / totalSeconds) / 10 : 0,
+    favoriteWeekday: totalSeconds > 0
+      ? new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
+          new Date(2024, 0, 7 + favoriteWeekdayIndex),
+        )
+      : null,
+  };
+}
