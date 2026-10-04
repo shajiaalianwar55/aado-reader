@@ -202,3 +202,34 @@ export function calculateLongestStreak(stats: ReadingStats): number {
 
   return longest;
 }
+
+export function calculatePersonalBests(stats: ReadingStats): {
+  readingMinutes: number;
+  readingDate: string | null;
+  pages: number;
+  pagesDate: string | null;
+  focusSessions: number;
+  focusDate: string | null;
+} {
+  const bestReadingDay = stats.days.reduce<(typeof stats.days)[number] | null>(
+    (best, day) => !best || day.seconds > best.seconds ? day : best,
+    null,
+  );
+  const bestPageDay = stats.days.reduce<(typeof stats.days)[number] | null>(
+    (best, day) => !best || day.pages > best.pages ? day : best,
+    null,
+  );
+  const bestFocusDay = stats.days.reduce<(typeof stats.days)[number] | null>(
+    (best, day) => !best || (day.focusSessions ?? 0) > (best.focusSessions ?? 0) ? day : best,
+    null,
+  );
+
+  return {
+    readingMinutes: Math.round((bestReadingDay?.seconds ?? 0) / 60),
+    readingDate: bestReadingDay && bestReadingDay.seconds > 0 ? bestReadingDay.date : null,
+    pages: bestPageDay?.pages ?? 0,
+    pagesDate: bestPageDay && bestPageDay.pages > 0 ? bestPageDay.date : null,
+    focusSessions: bestFocusDay?.focusSessions ?? 0,
+    focusDate: bestFocusDay && (bestFocusDay.focusSessions ?? 0) > 0 ? bestFocusDay.date : null,
+  };
+}

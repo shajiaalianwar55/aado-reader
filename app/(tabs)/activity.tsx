@@ -9,6 +9,7 @@ import {
   calculateActiveDays,
   calculateGoalDays,
   calculateLongestStreak,
+  calculatePersonalBests,
   calculateRecentFocusSessions,
   calculateRecentPages,
   calculateRecentReadingMinutes,
@@ -60,6 +61,7 @@ export default function ActivityScreen() {
   const recentFocusSessions = calculateRecentFocusSessions(stats);
   const currentStreak = calculateStreak(stats);
   const weeklyComparison = calculateWeeklyComparison(stats);
+  const personalBests = calculatePersonalBests(stats);
   const weeklyTrend = weeklyComparison.changePercent == null
     ? 'New reading time this week'
     : `${weeklyComparison.changePercent >= 0 ? '+' : ''}${weeklyComparison.changePercent}% vs previous week`;
@@ -168,6 +170,25 @@ export default function ActivityScreen() {
         <Metric label="Goal days" value={`${goalDays}`} />
       </View>
 
+      <Text style={styles.section}>PERSONAL BESTS</Text>
+      <View style={styles.bestsCard}>
+        <PersonalBest
+          label="Reading time"
+          value={`${personalBests.readingMinutes} min`}
+          date={personalBests.readingDate}
+        />
+        <PersonalBest
+          label="Pages in a day"
+          value={`${personalBests.pages}`}
+          date={personalBests.pagesDate}
+        />
+        <PersonalBest
+          label="Focus sessions"
+          value={`${personalBests.focusSessions}`}
+          date={personalBests.focusDate}
+        />
+      </View>
+
       <Text style={styles.section}>LAST 28 DAYS</Text>
       <ReadingHeatmap stats={stats} />
 
@@ -209,6 +230,21 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PersonalBest({ label, value, date }: { label: string; value: string; date: string | null }) {
+  const formattedDate = date
+    ? new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : 'Start reading to set a record';
+  return (
+    <View style={styles.bestRow}>
+      <View>
+        <Text style={styles.bestLabel}>{label}</Text>
+        <Text style={styles.bestDate}>{formattedDate}</Text>
+      </View>
+      <Text style={styles.bestValue}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F1419' },
   content: { padding: 24, paddingTop: 12 },
@@ -244,6 +280,11 @@ const styles = StyleSheet.create({
   weeklyLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 3 },
   weeklyTrend: { color: '#70BFA1', fontSize: 12, fontWeight: '700', marginTop: 13 },
   weeklyTrendDown: { color: '#E8A0A0' },
+  bestsCard: { backgroundColor: '#141A22', borderRadius: 14, paddingHorizontal: 15 },
+  bestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 13, borderBottomColor: '#202936', borderBottomWidth: 1 },
+  bestLabel: { color: '#E8EAED', fontSize: 14, fontWeight: '700' },
+  bestDate: { color: '#7F8996', fontSize: 11, marginTop: 2 },
+  bestValue: { color: '#C4A574', fontSize: 18, fontWeight: '800' },
   goals: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   goal: { borderColor: '#2A3441', borderWidth: 1, backgroundColor: '#141A22', borderRadius: 10, paddingHorizontal: 15, paddingVertical: 11 },
   goalActive: { backgroundColor: '#C4A574', borderColor: '#C4A574' },
