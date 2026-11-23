@@ -8,6 +8,7 @@ import { ReadingMilestones } from '@/src/components/ReadingMilestones';
 import {
   calculateActiveDays,
   calculateGoalDays,
+  calculateGoalStreaks,
   calculateLongestStreak,
   calculatePersonalBests,
   calculateRecentFocusSessions,
@@ -58,6 +59,7 @@ export default function ActivityScreen() {
   const recentPages = calculateRecentPages(stats);
   const activeDays = calculateActiveDays(stats);
   const goalDays = calculateGoalDays(stats);
+  const goalStreaks = calculateGoalStreaks(stats);
   const longestStreak = calculateLongestStreak(stats);
   const recentFocusSessions = calculateRecentFocusSessions(stats);
   const currentStreak = calculateStreak(stats);
@@ -170,6 +172,19 @@ export default function ActivityScreen() {
         <Metric label="Minutes read" value={`${recentMinutes}`} />
         <Metric label="Longest streak" value={`${longestStreak}`} />
         <Metric label="Goal days" value={`${goalDays}`} />
+      </View>
+
+      <Text style={styles.section}>GOAL STREAKS</Text>
+      <View style={styles.goalStreakCard}>
+        <View style={styles.goalStreakMetric}>
+          <Text style={styles.goalStreakValue}>{goalStreaks.current}</Text>
+          <Text style={styles.goalStreakLabel}>Current goal streak</Text>
+        </View>
+        <View style={styles.patternDivider} />
+        <View style={styles.goalStreakMetric}>
+          <Text style={styles.goalStreakValue}>{goalStreaks.longest}</Text>
+          <Text style={styles.goalStreakLabel}>Best goal streak</Text>
+        </View>
       </View>
 
       <Text style={styles.section}>PERSONAL BESTS</Text>
@@ -304,6 +319,10 @@ const styles = StyleSheet.create({
   weeklyLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 3 },
   weeklyTrend: { color: '#70BFA1', fontSize: 12, fontWeight: '700', marginTop: 13 },
   weeklyTrendDown: { color: '#E8A0A0' },
+  goalStreakCard: { flexDirection: 'row', alignItems: 'stretch', backgroundColor: '#141A22', borderRadius: 14, padding: 15 },
+  goalStreakMetric: { flex: 1, alignItems: 'center' },
+  goalStreakValue: { color: '#C4A574', fontSize: 26, fontWeight: '800' },
+  goalStreakLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 3, textAlign: 'center' },
   bestsCard: { backgroundColor: '#141A22', borderRadius: 14, paddingHorizontal: 15 },
   bestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 13, borderBottomColor: '#202936', borderBottomWidth: 1 },
   bestLabel: { color: '#E8EAED', fontSize: 14, fontWeight: '700' },

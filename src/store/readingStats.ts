@@ -172,6 +172,39 @@ export function calculateGoalDays(
   ).length;
 }
 
+export function calculateGoalStreaks(
+  stats: ReadingStats,
+  today = new Date(),
+): { current: number; longest: number } {
+  const goalSeconds = Math.max(1, stats.dailyGoalMinutes) * 60;
+  const goalDates = [...new Set(
+    stats.days.filter((day) => day.seconds >= goalSeconds).map((day) => day.date),
+  )].sort();
+  const goalDateSet = new Set(goalDates);
+  let longest = 0;
+  let run = 0;
+  let previous = '';
+
+  goalDates.forEach((dateKey) => {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const prior = new Date(year, month - 1, day);
+    prior.setDate(prior.getDate() - 1);
+    run = previous === localDateKey(prior) ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    previous = dateKey;
+  });
+
+  let current = 0;
+  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (!goalDateSet.has(localDateKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (goalDateSet.has(localDateKey(cursor))) {
+    current += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return { current, longest };
+}
+
 export function calculateRecentFocusSessions(
   stats: ReadingStats,
   days = 7,
