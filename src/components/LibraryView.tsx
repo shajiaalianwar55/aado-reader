@@ -145,6 +145,7 @@ export function LibraryView({
   const [notesOnly, setNotesOnly] = useState(false);
   const [ratedOnly, setRatedOnly] = useState(false);
   const [shortReadsOnly, setShortReadsOnly] = useState(false);
+  const [staleOnly, setStaleOnly] = useState(false);
   const [collectionFilter, setCollectionFilter] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
   const collections = useMemo(
@@ -159,6 +160,10 @@ export function LibraryView({
     [documents],
   );
   const archivedCount = documents.filter((document) => document.archived).length;
+  const staleCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const staleCount = documents.filter(
+    (document) => !document.archived && !document.finished && document.lastOpened <= staleCutoff,
+  ).length;
   const activeFinishedCount = documents.filter((document) => document.finished && !document.archived).length;
   const dueSoonCount = documents.filter((document) => {
     const plan = getReadingPlan(document);
@@ -175,6 +180,7 @@ export function LibraryView({
     notesOnly ||
     ratedOnly ||
     shortReadsOnly ||
+    staleOnly ||
     collectionFilter !== 'all' ||
     showArchived;
   const emptyLibrary = documents.length === 0;
@@ -224,6 +230,9 @@ export function LibraryView({
         return remaining != null && remaining <= 30 * 60;
       });
     }
+    if (staleOnly) {
+      base = base.filter((doc) => !doc.finished && doc.lastOpened <= staleCutoff);
+    }
     if (statusFilter === 'unread') {
       base = base.filter((doc) => !doc.finished && doc.lastPage <= 1);
     } else if (statusFilter === 'reading') {
@@ -256,6 +265,8 @@ export function LibraryView({
     showArchived,
     shortReadsOnly,
     sortMode,
+    staleCutoff,
+    staleOnly,
     statusFilter,
   ]);
 
@@ -554,6 +565,16 @@ export function LibraryView({
                 Under 30m
               </Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={staleOnly ? 'Include recently opened documents' : 'Show unfinished documents not opened in 30 days'}
+              accessibilityState={{ selected: staleOnly }}
+              onPress={() => setStaleOnly((value) => !value)}
+              style={[styles.sortChip, staleOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, staleOnly && styles.sortChipTextActive]}>
+                Revisit ({staleCount})
+              </Text>
+            </Pressable>
           </View>
           <Text style={styles.filterLabel}>Reading status</Text>
           <View style={styles.sortRow}>
@@ -661,6 +682,7 @@ export function LibraryView({
                 setNotesOnly(false);
                 setRatedOnly(false);
                 setShortReadsOnly(false);
+                setStaleOnly(false);
                 setCollectionFilter('all');
                 setShowArchived(false);
               }}
@@ -688,6 +710,7 @@ export function LibraryView({
                     notesOnly ||
                     ratedOnly ||
                     shortReadsOnly ||
+                    staleOnly ||
                     statusFilter !== 'all' ||
                     collectionFilter !== 'all' ||
                     showArchived

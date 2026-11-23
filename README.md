@@ -37,6 +37,7 @@ Aado focuses on **reading comfort** first:
 - Reading-pattern insights for active-day averages, page pace, and strongest weekday
 - Library filters for unread, in-progress, finished, and annotated documents
 - One-tap reset for library search, sorting, and filters
+- A revisit filter for unfinished PDFs left unopened for 30 days
 - Library sorting by recency, title, progress, and reading time
 - Custom collections for grouping and filtering related documents
 - An ordered “Up next” reading queue with a dedicated library view
