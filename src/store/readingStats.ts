@@ -160,6 +160,34 @@ export function calculateWeeklyComparison(
   };
 }
 
+export function calculateMonthlyComparison(
+  stats: ReadingStats,
+  today = new Date(),
+): {
+  currentMinutes: number;
+  previousMinutes: number;
+  currentPages: number;
+  previousPages: number;
+  changePercent: number | null;
+} {
+  const previousPeriodEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  previousPeriodEnd.setDate(previousPeriodEnd.getDate() - 30);
+  const currentMinutes = calculateRecentReadingMinutes(stats, 30, today);
+  const previousMinutes = calculateRecentReadingMinutes(stats, 30, previousPeriodEnd);
+  const currentPages = calculateRecentPages(stats, 30, today);
+  const previousPages = calculateRecentPages(stats, 30, previousPeriodEnd);
+
+  return {
+    currentMinutes,
+    previousMinutes,
+    currentPages,
+    previousPages,
+    changePercent: previousMinutes > 0
+      ? Math.round(((currentMinutes - previousMinutes) / previousMinutes) * 100)
+      : currentMinutes > 0 ? null : 0,
+  };
+}
+
 export function calculateGoalDays(
   stats: ReadingStats,
   days = 30,

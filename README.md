@@ -31,6 +31,7 @@ Aado focuses on **reading comfort** first:
 - Shareable 30-day reading reports with time, pages, consistency, and streaks
 - An accessible 28-day activity heatmap scaled to daily-goal progress
 - Week-over-week reading comparisons for minutes and pages
+- Rolling 30-day comparisons against the preceding month
 - Progress milestones for reading time, streaks, finished PDFs, and focus sessions
 - Personal records for reading time, pages, and focus sessions in a single day
 - Reading-pattern insights for active-day averages, page pace, and strongest weekday

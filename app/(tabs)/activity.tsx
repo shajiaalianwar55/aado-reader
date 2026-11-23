@@ -10,6 +10,7 @@ import {
   calculateGoalDays,
   calculateGoalStreaks,
   calculateLongestStreak,
+  calculateMonthlyComparison,
   calculatePersonalBests,
   calculateRecentFocusSessions,
   calculateRecentPages,
@@ -64,11 +65,15 @@ export default function ActivityScreen() {
   const recentFocusSessions = calculateRecentFocusSessions(stats);
   const currentStreak = calculateStreak(stats);
   const weeklyComparison = calculateWeeklyComparison(stats);
+  const monthlyComparison = calculateMonthlyComparison(stats);
   const personalBests = calculatePersonalBests(stats);
   const readingPatterns = calculateReadingPatterns(stats);
   const weeklyTrend = weeklyComparison.changePercent == null
     ? 'New reading time this week'
     : `${weeklyComparison.changePercent >= 0 ? '+' : ''}${weeklyComparison.changePercent}% vs previous week`;
+  const monthlyTrend = monthlyComparison.changePercent == null
+    ? 'First reading time in these periods'
+    : `${monthlyComparison.changePercent >= 0 ? '+' : ''}${monthlyComparison.changePercent}% vs prior 30 days`;
 
   const shareReport = async () => {
     const message = [
@@ -172,6 +177,28 @@ export default function ActivityScreen() {
         <Metric label="Minutes read" value={`${recentMinutes}`} />
         <Metric label="Longest streak" value={`${longestStreak}`} />
         <Metric label="Goal days" value={`${goalDays}`} />
+      </View>
+
+      <View style={styles.monthlyCard}>
+        <View style={styles.weeklyValues}>
+          <View>
+            <Text style={styles.weeklyValue}>{monthlyComparison.currentMinutes} min</Text>
+            <Text style={styles.weeklyLabel}>Recent 30 days · {monthlyComparison.currentPages} pages</Text>
+          </View>
+          <View style={styles.weeklyPrevious}>
+            <Text style={styles.weeklyValue}>{monthlyComparison.previousMinutes} min</Text>
+            <Text style={styles.weeklyLabel}>Prior 30 · {monthlyComparison.previousPages} pages</Text>
+          </View>
+        </View>
+        <Text
+          style={[
+            styles.weeklyTrend,
+            monthlyComparison.changePercent != null && monthlyComparison.changePercent < 0
+              ? styles.weeklyTrendDown
+              : null,
+          ]}>
+          {monthlyTrend}
+        </Text>
       </View>
 
       <Text style={styles.section}>GOAL STREAKS</Text>
@@ -319,6 +346,7 @@ const styles = StyleSheet.create({
   weeklyLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 3 },
   weeklyTrend: { color: '#70BFA1', fontSize: 12, fontWeight: '700', marginTop: 13 },
   weeklyTrendDown: { color: '#E8A0A0' },
+  monthlyCard: { backgroundColor: '#141A22', borderRadius: 14, padding: 15, marginTop: 10 },
   goalStreakCard: { flexDirection: 'row', alignItems: 'stretch', backgroundColor: '#141A22', borderRadius: 14, padding: 15 },
   goalStreakMetric: { flex: 1, alignItems: 'center' },
   goalStreakValue: { color: '#C4A574', fontSize: 26, fontWeight: '800' },
