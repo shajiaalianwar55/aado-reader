@@ -121,9 +121,10 @@ export function calculateActiveDays(
   return stats.days.filter((day) => includedDates.has(day.date) && day.seconds > 0).length;
 }
 
-export function calculateWeeklyComparison(
+function calculatePeriodComparison(
   stats: ReadingStats,
-  today = new Date(),
+  periodDays: number,
+  today: Date,
 ): {
   currentMinutes: number;
   previousMinutes: number;
@@ -131,13 +132,8 @@ export function calculateWeeklyComparison(
   previousPages: number;
   changePercent: number | null;
 } {
-  const dateKeys = (startOffset: number) => new Set(
-    Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      date.setDate(date.getDate() - (startOffset + index));
-      return localDateKey(date);
-    }),
-  );
+  const previousPeriodEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  previousPeriodEnd.setDate(previousPeriodEnd.getDate() - periodDays);
   const totals = (keys: Set<string>) => stats.days
     .filter((day) => keys.has(day.date))
     .reduce(
@@ -147,8 +143,8 @@ export function calculateWeeklyComparison(
       }),
       { seconds: 0, pages: 0 },
     );
-  const current = totals(dateKeys(0));
-  const previous = totals(dateKeys(7));
+  const current = totals(recentDateKeys(periodDays, today));
+  const previous = totals(recentDateKeys(periodDays, previousPeriodEnd));
   return {
     currentMinutes: Math.round(current.seconds / 60),
     previousMinutes: Math.round(previous.seconds / 60),
@@ -160,32 +156,12 @@ export function calculateWeeklyComparison(
   };
 }
 
-export function calculateMonthlyComparison(
-  stats: ReadingStats,
-  today = new Date(),
-): {
-  currentMinutes: number;
-  previousMinutes: number;
-  currentPages: number;
-  previousPages: number;
-  changePercent: number | null;
-} {
-  const previousPeriodEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  previousPeriodEnd.setDate(previousPeriodEnd.getDate() - 30);
-  const currentMinutes = calculateRecentReadingMinutes(stats, 30, today);
-  const previousMinutes = calculateRecentReadingMinutes(stats, 30, previousPeriodEnd);
-  const currentPages = calculateRecentPages(stats, 30, today);
-  const previousPages = calculateRecentPages(stats, 30, previousPeriodEnd);
+export function calculateWeeklyComparison(stats: ReadingStats, today = new Date()) {
+  return calculatePeriodComparison(stats, 7, today);
+}
 
-  return {
-    currentMinutes,
-    previousMinutes,
-    currentPages,
-    previousPages,
-    changePercent: previousMinutes > 0
-      ? Math.round(((currentMinutes - previousMinutes) / previousMinutes) * 100)
-      : currentMinutes > 0 ? null : 0,
-  };
+export function calculateMonthlyComparison(stats: ReadingStats, today = new Date()) {
+  return calculatePeriodComparison(stats, 30, today);
 }
 
 export function calculateGoalDays(
