@@ -143,6 +143,7 @@ export function LibraryView({
   const [plannedOnly, setPlannedOnly] = useState(false);
   const [dueSoonOnly, setDueSoonOnly] = useState(false);
   const [notesOnly, setNotesOnly] = useState(false);
+  const [starredOnly, setStarredOnly] = useState(false);
   const [ratedOnly, setRatedOnly] = useState(false);
   const [shortReadsOnly, setShortReadsOnly] = useState(false);
   const [staleOnly, setStaleOnly] = useState(false);
@@ -185,6 +186,7 @@ export function LibraryView({
     plannedOnly ||
     dueSoonOnly ||
     notesOnly ||
+    starredOnly ||
     ratedOnly ||
     shortReadsOnly ||
     staleOnly ||
@@ -230,6 +232,7 @@ export function LibraryView({
       });
     }
     if (notesOnly) base = base.filter((doc) => getNoteCount(doc) > 0);
+    if (starredOnly) base = base.filter((doc) => getStarredCount(doc) > 0);
     if (ratedOnly) base = base.filter((doc) => Boolean(doc.rating));
     if (shortReadsOnly) {
       base = base.filter((doc) => {
@@ -272,6 +275,7 @@ export function LibraryView({
     sortMode,
     staleDocuments,
     staleOnly,
+    starredOnly,
     statusFilter,
     visibleDocuments,
   ]);
@@ -523,6 +527,16 @@ export function LibraryView({
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Show only documents with starred annotations"
+              accessibilityState={{ selected: starredOnly }}
+              onPress={() => setStarredOnly((value) => !value)}
+              style={[styles.sortChip, starredOnly && styles.sortChipActive]}>
+              <Text style={[styles.sortChipText, starredOnly && styles.sortChipTextActive]}>
+                Starred notes
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel={queuedOnly ? 'Include documents outside the reading queue' : 'Show reading queue only'}
               accessibilityState={{ selected: queuedOnly }}
               onPress={() => setQueuedOnly((value) => !value)}
@@ -686,6 +700,7 @@ export function LibraryView({
                 setPlannedOnly(false);
                 setDueSoonOnly(false);
                 setNotesOnly(false);
+                setStarredOnly(false);
                 setRatedOnly(false);
                 setShortReadsOnly(false);
                 setStaleOnly(false);
@@ -714,6 +729,7 @@ export function LibraryView({
                     plannedOnly ||
                     dueSoonOnly ||
                     notesOnly ||
+                    starredOnly ||
                     ratedOnly ||
                     shortReadsOnly ||
                     staleOnly ||
