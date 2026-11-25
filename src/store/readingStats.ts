@@ -220,9 +220,16 @@ export function calculateRecentFocusSessions(
     .reduce((total, day) => total + (day.focusSessions ?? 0), 0);
 }
 
-export function calculateLongestStreak(stats: ReadingStats): number {
+export function calculateLongestStreak(
+  stats: ReadingStats,
+  days?: number,
+  today = new Date(),
+): number {
+  const includedDates = days === undefined ? null : recentDateKeys(days, today);
   const activeDates = [...new Set(
-    stats.days.filter((day) => day.seconds > 0).map((day) => day.date),
+    stats.days
+      .filter((day) => day.seconds > 0 && (!includedDates || includedDates.has(day.date)))
+      .map((day) => day.date),
   )].sort();
   let longest = 0;
   let current = 0;

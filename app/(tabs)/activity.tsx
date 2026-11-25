@@ -61,7 +61,7 @@ export default function ActivityScreen() {
   const activeDays = calculateActiveDays(stats);
   const goalDays = calculateGoalDays(stats);
   const goalStreaks = calculateGoalStreaks(stats);
-  const longestStreak = calculateLongestStreak(stats);
+  const longestStreak = calculateLongestStreak(stats, 30);
   const recentFocusSessions = calculateRecentFocusSessions(stats);
   const currentStreak = calculateStreak(stats);
   const weeklyComparison = calculateWeeklyComparison(stats);
@@ -84,7 +84,7 @@ export default function ActivityScreen() {
       `${activeDays} active reading days`,
       `${goalDays} daily goals reached`,
       `${currentStreak} day current streak`,
-      `${longestStreak} day longest streak`,
+      `${longestStreak} day longest streak in the last 30 days`,
       `${recentFocusSessions} focus sessions in the last 7 days`,
       `${finished} documents finished`,
     ].join('\n');
