@@ -161,9 +161,16 @@ export function LibraryView({
   );
   const archivedCount = documents.filter((document) => document.archived).length;
   const staleCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const staleCount = documents.filter(
-    (document) => !document.archived && !document.finished && document.lastOpened <= staleCutoff,
-  ).length;
+  const visibleDocuments = useMemo(
+    () => documents.filter((document) => Boolean(document.archived) === showArchived),
+    [documents, showArchived],
+  );
+  const staleDocuments = useMemo(
+    () => new Set(visibleDocuments.filter(
+      (document) => !document.finished && document.lastOpened <= staleCutoff,
+    ).map((document) => document.id)),
+    [visibleDocuments, staleCutoff],
+  );
   const activeFinishedCount = documents.filter((document) => document.finished && !document.archived).length;
   const dueSoonCount = documents.filter((document) => {
     const plan = getReadingPlan(document);
@@ -209,7 +216,7 @@ export function LibraryView({
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    let base = documents.filter((doc) => Boolean(doc.archived) === showArchived);
+    let base = visibleDocuments;
     if (collectionFilter !== 'all') {
       base = base.filter((doc) => doc.collection === collectionFilter);
     }
@@ -231,7 +238,7 @@ export function LibraryView({
       });
     }
     if (staleOnly) {
-      base = base.filter((doc) => !doc.finished && doc.lastOpened <= staleCutoff);
+      base = base.filter((doc) => staleDocuments.has(doc.id));
     }
     if (statusFilter === 'unread') {
       base = base.filter((doc) => !doc.finished && doc.lastPage <= 1);
@@ -254,7 +261,6 @@ export function LibraryView({
     return sortLibraryByMode(base, sortMode);
   }, [
     collectionFilter,
-    documents,
     dueSoonOnly,
     notesOnly,
     pinnedOnly,
@@ -262,12 +268,12 @@ export function LibraryView({
     queuedOnly,
     query,
     ratedOnly,
-    showArchived,
     shortReadsOnly,
     sortMode,
-    staleCutoff,
+    staleDocuments,
     staleOnly,
     statusFilter,
+    visibleDocuments,
   ]);
 
   const empty = emptyLibrary || filtered.length === 0;
@@ -572,7 +578,7 @@ export function LibraryView({
               onPress={() => setStaleOnly((value) => !value)}
               style={[styles.sortChip, staleOnly && styles.sortChipActive]}>
               <Text style={[styles.sortChipText, staleOnly && styles.sortChipTextActive]}>
-                Revisit ({staleCount})
+                Revisit ({staleDocuments.size})
               </Text>
             </Pressable>
           </View>
