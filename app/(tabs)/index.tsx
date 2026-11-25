@@ -83,7 +83,7 @@ export default function LibraryScreen() {
   }, [busy, documents, router]);
 
   const openDocument = useCallback(
-    (id: string) => {
+    (id: string, resumeImmediately = false) => {
       const doc = documents.find((d) => d.id === id);
       if (!doc) return;
 
@@ -98,6 +98,11 @@ export default function LibraryScreen() {
           },
         });
       };
+
+      if (resumeImmediately) {
+        open(doc.lastPage);
+        return;
+      }
 
       if (doc.lastPage > 1) {
         Alert.alert('Open document', `Resume at page ${doc.lastPage}, or start from the beginning?`, [

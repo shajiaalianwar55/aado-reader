@@ -43,7 +43,7 @@ type LibraryScreenProps = {
   }>;
   dailyGoalMinutes?: number;
   onOpenDocument?: () => void;
-  onSelectDocument?: (id: string) => void;
+  onSelectDocument?: (id: string, resumeImmediately?: boolean) => void;
   onRemoveDocument?: (id: string) => void;
   onRenameDocument?: (id: string) => void;
   onOrganizeDocument?: (id: string) => void;
@@ -347,7 +347,7 @@ export function LibraryView({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Continue reading ${continueDoc.name}`}
-          onPress={() => onSelectDocument?.(continueDoc.id)}
+          onPress={() => onSelectDocument?.(continueDoc.id, true)}
           style={({ pressed }) => [styles.continueCard, pressed && styles.pressed]}>
           <Text style={styles.continueEyebrow}>Continue reading</Text>
           <Text style={styles.continueTitle} numberOfLines={2}>
